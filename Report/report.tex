@@ -12,20 +12,20 @@
 %\begin{titlingpage}
 \maketitle
 \begin{abstract}
-The aim of this document is to describe how to write a report for the project-exam for the course Distributed Systems, at the University of Udine.
-It is also a guideline for the development of the project itself.
-
-This document is very brief and succint, and it is by no means comprehensive of all the informations that should be given about a software project. You are invited to supplement these guidelines as needed to best describe your work.
+This document present a distributed system of drones for the delivery of packages. The goal is to provide a reliable fleet of drones with recharge stations.
 \end{abstract}
 %\end{titlingpage}
 
 \chapter{Introduction}\label{ch:intro}
 
-In this chapter you describe the main problem, and an idea of the solution.
-It is not necessary to be very detailed or formal, but it is important to explain which are the main aims and issues from the point of view of Distributed Systems:
+The problem to solve is: the handle of delivery orders and management of a dynamic fleet of drones.\\
+The space is modelled by a 2D grid, so the diagonal movements of drones are calculated with some approximation. There aren't forbidden zone nor forced paths.\\
+The drones have cellular connectivity and know a few other drones. They are equipped with GPS.\\
+There are some recharging and repairing stations on the map.\\
+There is a server that centralize the orders of the clients and act as a reliable broker.\\
+There is an other server for the registration of the drones, this server also introduces a new drone to a few other.
+
 \begin{itemize}
-\item A description of the application.
-\item The overall structure of the implementation: how resources are deployed, which are the players, the r\^oles.
 \item The distributed system features (and the transparencies) and algorithms you intend to implement.
 \item Your plan for testing the system.
 \item A schedule for how you plan to carry our your design and implementation
@@ -38,14 +38,14 @@ It is not necessary to be very detailed or formal, but it is important to explai
 In this chapter, we describe in detail functional and non-functional requirements of a solution for the problem.
 
 \section{Functional requirements}
-Which functions must be offered to users / other programs?  Which are the input data and the output data? Which is the expected effect? 
+Which functions must be offered to users / other programs?  Which are the input data and the output data? Which is the expected effect?
 
 \section{Non functional requirements}
 Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
 
 Are there execution time bounds? Minimum data rates?
 
-If requested, specific platforms/languages/middlewares requirements for the implementation can be decided here. (E.g.: if the project is on a SOA, we may request that functions are offered via SOAP or RESTful services). 
+If requested, specific platforms/languages/middlewares requirements for the implementation can be decided here. (E.g.: if the project is on a SOA, we may request that functions are offered via SOAP or RESTful services).
 
 
 
