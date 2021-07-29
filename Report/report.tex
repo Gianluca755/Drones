@@ -70,7 +70,7 @@ The following are the functional requirements required by the project:
 \item a client recieves an ack message if their request has been recieved;
 \item a drone can crash at any point;
 \item if a drone crashes another one will complete it's task;
-\item a broken drone will eventually be moved to a charging station;
+\item a broken drone will eventually be moved to a charging station for repairs;
 \item there must be a process for new drones to join the network.
 \end{itemize}
  
@@ -83,7 +83,7 @@ The following are the non-functional requirements required by the project:
 	\item concurrency: only one drone will be selected to carry out the delivery of the package;
 	\item reconfiguration: the entrance of a new drone in the network must have a low overhead;
 	\item failure: if a drone crashes the delivery must be completed smothly for the client;
-	\item performance and scaling: the system must be able to scale by adding more drones smoothly.
+	\item performance and scaling: the system must be able to scale smoothly when adding more drones .
 	\end{itemize}
 \end{itemize}
 %Are there execution time bounds? Minimum data rates?
