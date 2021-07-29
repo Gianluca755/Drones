@@ -28,6 +28,7 @@ There are some recharging and repairing stations on the map.\\
 There is a server that centralize the orders of the clients and act as a reliable message broker (middle-man).\\
 There is a server which provide some management of drones, and make sure the order is carried out.\\
 There is an other server for the registration of the drones; when a new drone wants to join the fleet this server will give the new drone an ID and a list of other drones to connect to and the locations of recharging stations and warehouses.
+
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\linewidth]{Overview}
@@ -39,7 +40,25 @@ A drone can crash at any point in time, when this happens another drone will be 
 
 \begin{itemize}
 \item The distributed system features (and the transparencies) and algorithms you intend to implement.
-\item Your plan for testing the system.
+
+% \item Your plan for testing the system.
+
+The test cases that will be using must be sufficient to test all the critical situations that the system can encounter, those situations are:
+\begin{itemize}
+\item the case in which a drone crashes while it's idle;
+\item the case in which a drone crashes after it has been selected to move a package but it has not picked up the package yet:
+\item the case in which a drone crashes after it has picked up the package and it's delivering it to point B;
+\item the case in which a drone crashes after it has sent it's featurese(battery, position and carry weight) to the network for election;
+\item the case in which a drone has to go to a charging station;
+\item the case in which no drone is available to deliver a package;
+\item the case in which one or more drones lie about their position;
+\item the case in which a new drone joins the network;
+\item the case in which a drone crashes after it has sent a join request to the server.
+\end{itemize}
+
+
+
+
 \item A schedule for how you plan to carry our your design and implementation
 \end{itemize}
 
@@ -57,7 +76,7 @@ The following are the functional requirements required by the project:
 \item a client recieves an ack message if their request has been recieved;
 \item a drone can crash at any point;
 \item if a drone crashes another one will complete it's task;
-\item a broken drone will eventually be moved to a charging station;
+\item a broken drone will eventually be moved to a charging station for repairs;
 \item there must be a process for new drones to join the network.
 \end{itemize}
 
@@ -67,9 +86,10 @@ The following are the non-functional requirements required by the project:
 \begin{itemize}
 \item it's important for following transparencies to be present:
 	\begin{itemize}
+	\item concurrency: only one drone will be selected to carry out the delivery of the package;
 	\item reconfiguration: the entrance of a new drone in the network must have a low overhead;
 	\item failure: if a drone crashes the delivery must be completed smothly for the client;
-	\item performance and scaling: the system must be able to scale by adding more drones smoothly.
+	\item performance and scaling: the system must be able to scale smoothly when adding more drones .
 	\end{itemize}
 \end{itemize}
 %Are there execution time bounds? Minimum data rates?
