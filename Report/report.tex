@@ -25,7 +25,8 @@ The drones have cellular connectivity and know a few other drones. They are equi
 There are some recharging and repairing stations on the map.\\
 There is a server that centralize the orders of the clients and act as a reliable broker.\\
 There is an other server for the registration of the drones, this server also introduces a new drone to a few other drones.
-\\\\
+\\
+
 A client can send a request to the broker server for the delivery of a package from point A to point B, a done will be selected based on it's position relative to point A, it's  battery and it's maximum carry weight, the selected drone will carry out the delivery of the package.
 If a drone has low battery it will enter reserve mode, it will locate the nearest charging station and it will move to it to recharge it's battery, the charging stations are fixed and their location is known to all drones.
 A drone can crash at any point in time, when this happens another drone will be selected to transport the broken drone to the nearest charging station, if the broken drone was satisfying a request a second drone will be selected to complete the task.
@@ -33,7 +34,25 @@ When a new drone wants to join the fleet it will sent a join request to the regi
 
 \begin{itemize}
 \item The distributed system features (and the transparencies) and algorithms you intend to implement.
-\item Your plan for testing the system.
+
+% \item Your plan for testing the system.
+
+The test cases that will be using must be sufficient to test all the critical situations that the system can encounter, those situations are:
+\begin{itemize}
+\item the case in which a drone crashes while it's idle;
+\item the case in which a drone crashes after it has been selected to move a package but it has not picked up the package yet:
+\item the case in which a drone crashes after it has picked up the package and it's delivering it to point B;
+\item the case in which a drone crashes after it has sent it's featurese(battery, position and carry weight) to the network for election;
+\item the case in which a drone has to go to a charging station;
+\item the case in which no drone is available to deliver a package;
+\item the case in which lie about their position;
+\item the case in which a new drone joins the network;
+\item the case in which a drone crashes after it has sent a join request to the server;
+\end{itemize}
+
+
+
+
 \item A schedule for how you plan to carry our your design and implementation
 \end{itemize}
 
@@ -54,13 +73,14 @@ The following are the functional requirements required by the project:
 \item a broken drone will eventually be moved to a charging station;
 \item there must be a process for new drones to join the network.
 \end{itemize}
-
+ 
 \section{Non functional requirements}
 %Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
 The following are the non-functional requirements required by the project:
 \begin{itemize}
 \item it's important for following transparencies to be present:
 	\begin{itemize}
+	\item concurrency: only one drone will be selected to carry out the delivery of the package;
 	\item reconfiguration: the entrance of a new drone in the network must have a low overhead;
 	\item failure: if a drone crashes the delivery must be completed smothly for the client;
 	\item performance and scaling: the system must be able to scale by adding more drones smoothly.
