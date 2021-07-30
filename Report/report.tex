@@ -46,7 +46,7 @@ A drone can crash at any point in time, when this happens another drone will be 
 The test cases that will be using must be sufficient to test all the critical situations that the system can encounter, those situations are:
 \begin{itemize}
 \item the case in which a drone crashes while it's idle;
-\item the case in which a drone crashes after it has been selected to move a package but it has not picked up the package yet:
+\item the case in which a drw one crashes after it has been selected to move a package but it has not picked up the package yet:
 \item the case in which a drone crashes after it has picked up the package and it's delivering it to point B;
 \item the case in which a drone crashes after it has sent it's featurese(battery, position and carry weight) to the network for election;
 \item the case in which a drone has to go to a charging station;
@@ -84,6 +84,7 @@ The following are the functional requirements required by the project:
 %Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
 The following are the non-functional requirements required by the project:
 \begin{itemize}
+\item there is no limit on the minimum weight but the package can't weigh more than X;
 \item it's important for following transparencies to be present:
 	\begin{itemize}
 	\item concurrency: only one drone will be selected to carry out the delivery of the package;
