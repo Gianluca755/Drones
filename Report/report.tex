@@ -21,6 +21,16 @@
 
 \chapter{Introduction}\label{ch:intro}
 
+%In this chapter you describe the main problem, and an idea of the solution. It is not necessary to be very detailed or formal, but it is important to explain which are the main aims and issues from the point of view of Distributed Systems:
+%\begin{itemize}
+%A description of the application.
+%The overall structure of the implementation: how resources are deployed, which are the players, the roles.
+%\item The distributed system features (and the transparencies) and algorithms you intend to implement.
+% \item Your plan for testing the system.
+%\item A schedule for how you plan to carry our your design and implementation
+%\end{itemize}
+
+\section{Description of the application.}
 The problem to solve is: the handle of delivery orders and management of a dynamic fleet of drones.\\
 The space is modelled by a 2D grid, so the diagonal movements of drones are calculated with some approximation. There aren't forbidden zones nor forced paths.\\
 The drones have cellular connectivity and know a few other drones. They are equipped with GPS and we assume they have an ID, otherwise it could be given by the verificator server (see below).\\
@@ -39,10 +49,23 @@ A client can send a request to the broker server for the delivery of a package f
 If a drone has low battery it will enter reserve mode, it will locate the nearest charging station and it will move in that direction, the charging stations are fixed and their location is known to all drones.\\
 A drone can crash at any point in time, when this happens another drone will be selected to transport the broken drone to the nearest charging station, if the broken drone was satisfying a request a second drone will be selected to complete the task.
 
+
+\section{Structure of the implementation}
+
+the key players in our implementation are:
 \begin{itemize}
-\item The distributed system features (and the transparencies) and algorithms you intend to implement.
+\item Client: it's the client who sends a request to the broker server for a delivery;
+\item Drone: the drones are the entities that move the packages between locations, new drones that want to join the network send a message to the Fleet management server;
+\item Broker server: this server recieves the requests from the clients and sends back an ack message to the client ;
+\item Fleet management server: this server handles the entry of a new drone in the network;
+\item Charging station: these are stations in fixed points in the map where drones can go to recharge their battery and where broken dornes can be brought for repairs.
 \end{itemize}
-% \item Your plan for testing the system.
+
+
+\section{System features and algorithms}
+
+
+\section{Test cases}
 
 The test cases that have been analysed are listed below:\\
 
@@ -55,7 +78,7 @@ Normal conditions:
 Critical situations:
 \begin{itemize}
 	\item the case where a drone crashes while it's idle;
-	\item the case where a drone crashes after it has been selected to move a package but it has not picked up the package yet:
+	\item the case where a drone crashes after it has been selected to move a package but it has not picked up the package yet;
 	\item the case where a drone crashes after it has picked up the package and it's delivering it to point B;
 	\item the case where a drone is out of battery power;
 	\item the case where a drone crashes after it has sent its features(battery, position and carry weight) to the network for election;
@@ -64,9 +87,13 @@ Critical situations:
 	\item the case where a drone crashes after it has sent a join request to the server.
 \end{itemize}
 
+
+\section{schedule for design and implementation}
+
 \begin{itemize}
 \item A schedule for how you plan to carry our your design and implementation
 \end{itemize}
+
 
 
 
@@ -75,7 +102,9 @@ Critical situations:
 %In this chapter, we describe in detail functional and non-functional requirements of a solution for the problem.
 
 \section{Functional requirements}
+
 %Which functions must be offered to users / other programs?  Which are the input data and the output data? Which is the expected effect?
+
 The following are the functional requirements required by the project:
 \begin{itemize}
 \item a client can request the delivery of a package form point A to point B;
@@ -87,7 +116,11 @@ The following are the functional requirements required by the project:
 \end{itemize}
 
 \section{Non functional requirements}
+
 %Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
+%Are there execution time bounds? Minimum data rates?
+%If requested, specific platforms/languages/middlewares requirements for the implementation can be decided here. (E.g.: if the project is on a SOA, we may request that functions are offered via SOAP or RESTful services).
+
 The following are the non-functional requirements required by the project:
 \begin{itemize}
 \item there is no limit on the minimum weight but the package can't weigh more than X;
@@ -99,10 +132,6 @@ The following are the non-functional requirements required by the project:
 	\item performance and scaling: the system must be able to scale smoothly when adding more drones .
 	\end{itemize}
 \end{itemize}
-%Are there execution time bounds? Minimum data rates?
-
-%If requested, specific platforms/languages/middlewares requirements for the implementation can be decided here. (E.g.: if the project is on a SOA, we may request that functions are offered via SOAP or RESTful services).
-
 
 
 \chapter{Project}
