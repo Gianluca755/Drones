@@ -1,3 +1,6 @@
-Report/*
-\!Report/report.tex
-\!Report/images/*
+Report/*.gz
+Report/*.aux
+Report/*.log
+Report/*.pdf
+
+
