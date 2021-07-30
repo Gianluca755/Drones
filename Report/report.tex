@@ -1,5 +1,5 @@
 \documentclass[a4paper, oneside]{memoir}
-\usepackage{geometry}	% layout margin
+\usepackage[top=25mm, bottom=25mm]{geometry}	% layout margin
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
@@ -23,42 +23,48 @@
 
 The problem to solve is: the handle of delivery orders and management of a dynamic fleet of drones.\\
 The space is modelled by a 2D grid, so the diagonal movements of drones are calculated with some approximation. There aren't forbidden zones nor forced paths.\\
-The drones have cellular connectivity and know a few other drones. They are equipped with GPS.\\
+The drones have cellular connectivity and know a few other drones. They are equipped with GPS and we assume they have an ID, otherwise it could be given by the verificator server (see below).\\
 There are some recharging and repairing stations on the map.\\
 There is a server that centralize the orders of the clients and act as a reliable message broker (middle-man).\\
-There is a server which provide some management of drones, and make sure the order is carried out.\\
-There is an other server for the registration of the drones; when a new drone wants to join the fleet this server will give the new drone an ID and a list of other drones to connect to and the locations of recharging stations and warehouses.
+There is an other server for the registration of the drones; when a new drone wants to join the fleet this server will authenticate the drone.\\
+There is a server which provide some management of drones, and make sure the order is carried out. In particular when a new drone is connected the server will provide a list of other drones to connect to and the locations of recharging stations and warehouses.\\
+For simplicity the recharging stations and warehouses are assumed to have unlimited capacity.
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\linewidth]{Overview}
 \end{figure}
 
-A client can send a request to the broker server for the delivery of a package from point A to point B, a done will be selected based on it's position relative to point A, it's  battery and it's maximum carry weight, the selected drone will carry out the delivery of the package.
-If a drone has low battery it will enter reserve mode, it will locate the nearest charging station and it will move to it, to recharge its battery, the charging stations are fixed and their location is known to all drones.\\
+A client can send a request to the broker server for the delivery of a package from point A to point B, a done will be selected based on its position relative to point A, its  battery and maximum carry weight, the selected drone will carry out the delivery of the package.
+If a drone has low battery it will enter reserve mode, it will locate the nearest charging station and it will move in that direction, the charging stations are fixed and their location is known to all drones.\\
 A drone can crash at any point in time, when this happens another drone will be selected to transport the broken drone to the nearest charging station, if the broken drone was satisfying a request a second drone will be selected to complete the task.
 
 \begin{itemize}
 \item The distributed system features (and the transparencies) and algorithms you intend to implement.
-
+\end{itemize}
 % \item Your plan for testing the system.
 
-The test cases that will be using must be sufficient to test all the critical situations that the system can encounter, those situations are:
+The test cases that have been analysed are listed below:\\
+
+Normal conditions:
 \begin{itemize}
-\item the case in which a drone crashes while it's idle;
-\item the case in which a drw one crashes after it has been selected to move a package but it has not picked up the package yet:
-\item the case in which a drone crashes after it has picked up the package and it's delivering it to point B;
-\item the case in which a drone crashes after it has sent it's featurese(battery, position and carry weight) to the network for election;
-\item the case in which a drone has to go to a charging station;
-\item the case in which no drone is available to deliver a package;
-\item the case in which one or more drones lie about their position;
-\item the case in which a new drone joins the network;
-\item the case in which a drone crashes after it has sent a join request to the server.
+	\item the case where a drone has to go to a charging station;
+	\item the case where a new drone joins the network;
 \end{itemize}
 
+Critical situations:
+\begin{itemize}
+	\item the case where a drone crashes while it's idle;
+	\item the case where a drone crashes after it has been selected to move a package but it has not picked up the package yet:
+	\item the case where a drone crashes after it has picked up the package and it's delivering it to point B;
+	\item the case where a drone is out of battery power;
+	\item the case where a drone crashes after it has sent its features(battery, position and carry weight) to the network for election;
+	\item the case where no drone is available to deliver a package;
+	\item the case where one or more drones lie about their position;
+	\item the case where a drone crashes after it has sent a join request to the server.
+\end{itemize}
 
-
-
+\begin{itemize}
 \item A schedule for how you plan to carry our your design and implementation
 \end{itemize}
 
