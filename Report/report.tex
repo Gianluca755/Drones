@@ -56,10 +56,10 @@ The client position is not consiered in our system, drones can be in any point i
 
 the key players in our implementation are:
 \begin{itemize}
-\item Client: the client sends a request to the broker server for a delivery and recieves an ack message from it when the request is queued;
-\item Drone: the drones are the entities that move the packages between locations, new drones that want to join the network send a message to the Fleet management server, drones with low battery must go to a charging station to recharge;
+\item Client: the client sends a request to the broker server for a delivery and recieves an ack message from it when the request is completed;
+\item Drone: the drones are the entities that move the packages between locations, new drones that want to join the network send a message to the Registration server, drones with low battery must go to a charging station to recharge;
 \item Broker server: this server recieves the requests from the clients and sends back an ack message to the client, it queues requests if there are no drones available at the moment;
-\item Fleet management server: this server handles the entry of a new drone in the network, a drone can have it's own unique id or can be given one by this server;
+\item Registration server: this server handles the entry of a new drone in the network, a drone can have it's own unique id or can be given one by this server;
 \item Charging station: these are stations in fixed points in the map where drones can go to recharge their battery and where broken dornes can be brought for repairs.
 \end{itemize}
 
@@ -91,7 +91,7 @@ Critical situations:
 \end{itemize}
 
 
-\section{schedule for design and implementation}
+\section{Schedule for design and implementation}
 
 \begin{itemize}
 \item A schedule for how you plan to carry our your design and implementation
@@ -111,7 +111,7 @@ Critical situations:
 The following are the functional requirements required by the project:
 \begin{itemize}
 \item a client can request the delivery of a package form point A to point B;
-\item a client recieves an ack message if their request has been recieved;
+\item a client recieves an ack message if their request has been completed;
 \item a drone can crash at any point;
 \item if a drone crashes another one will complete it's task;
 \item a broken drone will eventually be moved to a charging station for repairs;
