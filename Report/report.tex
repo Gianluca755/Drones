@@ -67,6 +67,17 @@ the key players in our implementation are:
 \section{System features and algorithms}
 
 
+
+The system transparencies that we aim to implement are:
+\begin{itemize}
+	\item concurrency transparency : only one drone will be selected to carry out the delivery of the package;
+	\item reconfiguration transparency: the entrance of a new drone in the network must have a low overhead;
+	\item failure transparency: if a drone crashes the delivery must be completed smothly for the client;
+	\item performance and scaling transparency: the system must be able to scale smoothly when adding more drones .
+\end{itemize}
+
+To implement the process for reaching consensus on which drone has sto carry out the request we'll use the Bracha-Toueg fail consensus algorithm.
+
 \section{Test cases}
 
 The test cases that have been analysed are listed below:\\
