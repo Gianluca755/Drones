@@ -31,13 +31,20 @@
 %\end{itemize}
 
 \section{Description of the application.}
-The problem to solve is the delivery of packages and management of a dynamic fleet of drones.\\
-The space is modelled by a 2D grid, so the diagonal movements of drones are calculated with some approximation. There aren't forbidden zones nor forced paths.\\
-The drones have cellular connectivity and know a few other drones. They are equipped with GPS and we assume they have an ID, otherwise it could be given by the verificator server (see below).\\
-There are some recharging and repairing stations on the map. For simplicity the recharging stations and warehouses are assumed to have unlimited capacity.\\
-There is a server that centralize the orders of the clients and act as a reliable message broker (as middle-man).\\
-There is an other server for the registration of the drones; when a new drone wants to join the fleet this server will authenticate the drone.\\
-There is a server which provide some management of drones, and make sure the order is carried out. In particular when a new drone is connected the server will provide a list of other drones to connect to and the locations of recharging stations and warehouses.\\
+The problem to solve is the delivery of packages and management of a dynamic fleet of drones.
+
+The space is modelled by a 2D grid, so the diagonal movements of drones are calculated with some approximation. There aren't forbidden zones nor forced paths.
+
+The drones have cellular connectivity and know a few other drones. They are equipped with GPS and we assume they have an ID, otherwise it could be given by the manager server (see below).
+
+There are some recharging and repairing stations on the map. For simplicity the recharging stations and warehouses are assumed to have unlimited capacity.
+
+There is a server that centralize the orders of the clients and act as a reliable message broker (as middle-man).
+
+There is an other server for the registration of the drones, when a new drone wants to join the fleet this server will authenticate the drone.
+
+There is a server which provide some management of drones, and make sure the order is carried out. In particular when a new drone is connected the server will provide a list of other drones to connect to and the locations of recharging stations and warehouses.
+
 
 
 \begin{figure}[h!]
@@ -46,21 +53,23 @@ There is a server which provide some management of drones, and make sure the ord
 \end{figure}
 
 A client can send a request to the broker server for the delivery of a package from point A to point B, a done will be selected based on its position relative to point A, its  battery and maximum carry weight, the selected drone will carry out the delivery of the package.
-If a drone has low battery it will enter reserve mode, it will locate the nearest charging station and it will move in that direction, the charging stations are fixed and their location is known to all drones.\\
+
+If a drone has low battery it will enter reserve mode, it will locate the nearest charging station and it will move in that direction, the charging stations are fixed and their location is known to all drones.
+
 A drone can crash at any point in time, if it was able to signal the fail, another drone will be selected to transport the broken drone to the nearest charging station, if the broken drone was satisfying a request a second drone will be selected to complete the task.
 
 
 \section{Structure of the implementation}
 
-The client position is not consiered in our system, drones can be in any point in the map and move only if they need to deliver a package or if they need to recharge, the charging stations are located in fixed points in the map, their position is known to all drones.
-\\
+The client position is not considered in our system, drones can be in any point in the map and move only if they need to deliver a package or if they need to recharge, the charging stations are located in fixed points in the map, their position is known to all drones.
+
 The key players in our implementation are:
 \begin{itemize}
-\item Client: the client sends a request to the broker server for a delivery % and recieves an ack message from it when the request is completed;
+\item Client: the client sends a request to the broker server for a delivery; % and receives an ack message from it when the request is completed;
 \item Drone: the drones are the entities that move the packages between locations, new drones that want to join the network send a message to the Registration server, drones with low battery must go to a charging station to recharge;
-\item Broker server: this server receives the requests from clients %and sends back an ack message to the client, it queues requests if there are no drones available at the moment;
+\item Broker server: this server receives the requests from clients; %and sends back an ack message to the client, it queues requests if there are no drones available at the moment;
 \item Registration server: this server handles the entry of a new drone in the network, a drone can have it's own unique id or can obtain one from this server;
-\item Recharging/Repairing station: these are stations in fixed points in the map where drones can go to recharge their battery and where broken dornes can be brought for repairs.
+\item Recharging/Repairing station: these are stations in fixed points in the map where drones can go to recharge their battery and where broken drones can be brought for repairs.
 \end{itemize}
 
 
