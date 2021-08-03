@@ -63,7 +63,7 @@ The key players in our implementation are:
 \item "Client": the client sends a request to the broker server for a delivery. It's also able to query the broker asking for the status of the delivery;
 \item "Drone": the drones are the entities that move the packages between locations, new drones that want to join the network send a message to the manager server, drones with low battery must go to a charging station to recharge;
 \item "Broker server": this server receives the requests from clients, it's a single point of failure so it is replicated by a backup copy (it's possible to have more copies);
-\item "Manager server": this server handles the entry of a new drone in the network, a drone can have it's own unique id or can obtain one from this server. Other functionalities are the detection of an offline drone and consequentially offers the best-effort guarantee of successful delivery. The server is a single point of failure so it is replicated by a backup copy (it's possible to have more copies);
+\item "Manager server": this server handles the join of a new drone in the network, a drone can have it's own unique id or can obtain one from this server. Other functionalities are the detection of an offline drone and consequentially offers the best-effort guarantee of successful delivery. The server is a single point of failure so it is replicated by a backup copy (it's possible to have more copies);
 \item "Recharging/Repairing station": these are stations in fixed points in the map where drones can go to recharge their battery and where broken drones can be brought for repairs.
 \end{itemize}
 
@@ -74,7 +74,7 @@ The key players in our implementation are:
 The system transparencies that we aim to implement are:
 \begin{itemize}
 	\item concurrency transparency: only one drone will be selected to carry out the delivery of a package, but multiple orders from multiple clients are handled concurrently;
-	\item failure transparency: if a drone crashes the delivery must be completed smoothly for the client;
+	\item failure transparency: if a drone crashes the delivery must be completed smoothly for the client, if the broker server or the manager server crash the systems will connect to a secondary backup server;
 	\item location transparency: the position of the drones is unknown to the clients;
 	\item performance and scaling transparency: the system must be able to scale smoothly when adding more drones;
 	\item reconfiguration transparency: the entrance of a new drone in the network must have a low overhead.
@@ -116,11 +116,11 @@ Critical situations:
 
 The following are the functional requirements required by the project:
 \begin{itemize}
-\item a client can request the delivery of a package form point A to point B;
-\item a client receives an ack message if their request has been completed;
-\item if a drone crashes another one will complete it's task;
-\item a broken drone will eventually be moved to a charging station for repairs;
-\item there must be a process for new drones to join the network.
+\item request for a delivery: the input is the package starting position and the destination, the effect is the election of a drone;
+\item request for the status of a delivery: the input is , the output is a message to the client signalling the status of the delivery;
+\item message after crash while idle: the input is the broken drone position, the effect is the election of a drone that will move it to a repair station;
+\item message after crash before/after pickup: the input is the broken drone position, the effect is the election of a drone that will move it to a repair station and the election of another drone to carry out the delivery;
+\item a new drones to joins the network: the input provided by the new drone is its unique id if he has one, its carry weight, the output  from the manager server is the unique id(if needed) and the other drones to connect to, the effect is the entrance of the new drone in the network.
 \end{itemize}
 
 \section{Non functional requirements}
@@ -137,7 +137,8 @@ The following are the non-functional requirements required by the project:
 	\item concurrency: only one drone will be selected to carry out the delivery of the package;
 	\item reconfiguration: the entrance of a new drone in the network must have a low overhead;
 	\item failure: if a drone crashes the delivery must be completed smoothly for the client;
-	\item performance and scaling: the system must be able to scale smoothly when adding more drones .
+	\item performance and scaling: the system must be able to scale smoothly when adding more drones;
+	\item location: the position of the drones is unknown to the clients.
 	\end{itemize}
 \end{itemize}
 
