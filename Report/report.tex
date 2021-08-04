@@ -5,18 +5,19 @@
 
 \title{Report for the Project of Distributed Systems}
 
-\author{Ermacora Gianluca \\ Rovere Andrea 128074}
+\author{Ermacora Gianluca 132923\\ Rovere Andrea 128074}
 
 \date{\today}
 
 \begin{document}
 
 
-%\begin{titlingpage}
+\begin{titlingpage}
 \maketitle
-%\begin{abstract}
-%\end{abstract}
-%\end{titlingpage}
+\begin{abstract}
+Add something
+\end{abstract}
+\end{titlingpage}
 
 \chapter{Introduction}\label{ch:intro}
 
@@ -41,6 +42,8 @@ There are some recharging and repairing stations on the map. For simplicity the 
 There is a server that centralize the orders of the clients and act as a reliable message broker (as middle-man).
 
 There is a server which provide some management of drones, and make sure the order is carried out. In particular, the tracker functionality, when a new drone is connected the server will provide a list of other drones to connect to and the locations of recharging/repairing stations.
+
+The two servers are separated due to the fact that we are following the principle of separation of concerns, and because in case of multiple fleets of drones we would have one broker and various manager servers.
 
 \begin{figure}[h!]
 	\centering
@@ -73,7 +76,7 @@ The key players in our implementation are:
 
 The system transparencies that we aim to implement are:
 \begin{itemize}
-	\item con\textbf{currency transparency}: only one drone will be selected to carry out the delivery of a package, but multiple orders from multiple clients are handled concurrently;
+	\item \textbf{concurrency transparency}: only one drone will be selected to carry out the delivery of a package, but multiple orders from multiple clients are handled concurrently;
 	\item \textbf{failure transparency}: if a drone crashes the delivery must be completed smoothly for the client, if the broker server or the manager server crash the systems will connect to a secondary backup server;
 	\item \textbf{location transparency}: the position of the drones is unknown to the clients;
 	\item \textbf{performance and scaling transparency}: the system must be able to scale smoothly when adding more drones;
@@ -153,6 +156,15 @@ For each component, describe the functionalities it implements, and by who is us
 
 \section{Protocols and algorithms}
 Communication between components.  UML sequence diagrams go here.
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\linewidth]{New-drone}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\linewidth]{New-order}
+\end{figure}
 
 Also, put here a detailed description of distributed algorithms used to solve specific problems of the project.
 
@@ -178,14 +190,13 @@ Quantitative tests (simulations) and screenshots of the interfaces are put here.
 
 \chapter{Conclusions}
 
-What has been done with respect to what has been promised in Chapters~\ref{ch:intro} and \ref{ch:analysis}, and what is left out.
-
-Extensions:
+The possible extensions are:
 \begin{itemize}
 	\item realistic broker for large numbers of clients on multiple locations.
 	\item Broker support for multiple manager servers for various fleets of drones.
 	\item Support for warehouses, dynamic number of drones.
-	\item Security is not considered.
+	\item Security concerns should be addressed, in all the parts of the system.
+	\item The backup system could be improved with more servers, this can be achieved not by adding the backup server's addresses in the clients but by an actual broker server between the clients and the group of broker servers. The new actual broker should have one or more copy.
 \end{itemize}
 
 Limit: scheduling performance.
