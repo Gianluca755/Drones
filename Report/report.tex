@@ -87,6 +87,8 @@ To implement the process for reaching consensus on which drone has to carry out 
 
 \section{Test cases}
 
+To test our system we'll use a program that simulates the environment and spawns clients in random positions and with random requests, each entity in our system will run on a different virtual machine to better simulate the distributed aspects of our system.
+
 The test cases that have been analysed are listed below:\\
 
 Normal conditions:
@@ -109,6 +111,16 @@ Critical situations:
 \end{itemize}
 
 
+\section{Schedule for the design and implementation of the system}
+The schedule for how you plan to carry our your design and implementation is as follows:
+\begin{enumerate}
+\item Design of the system and definition of the functional and non-functional requirements;
+\item Selection of the programming language for the implementation;
+\item Specification of the protocols and algorithms that are used in the system;
+\item Implementation of the entities that play a role in the system and the communication between them; 
+\item Testing of each part of the system and the system as a whole;
+\end{enumerate}
+
 \chapter{Analysis}\label{ch:analysis}
 
 %In this chapter, we describe in detail functional and non-functional requirements of a solution for the problem.
@@ -119,11 +131,47 @@ Critical situations:
 
 The following are the functional requirements required by the project:
 \begin{itemize}
-\item \textbf{request for a delivery}: a client can request the delivery of a package form point A to point B, the input is the package starting position and the destination, there is no output and the effect is the election of a drone;
-\item \textbf{request for the status of a delivery}:the client can request the status of it's request to the broker server , the input is , the output is a message to the client signalling the status of the delivery;
-\item \textbf{message after crash while idle}:a drone that crashes while idle can request to be taken to a repair station, the input is the broken drone position, the effect is the election of a drone that will move it to a repair station;
-\item \textbf{message after crash after being chosen}:a drone that crashes after it has been chosen can request to be taken to a repair station, the input is the broken drone position and whether it already picked up the package or not , the effect is the election of a drone that will move it to a repair station and the election of another drone to carry out the delivery;
-\item \textbf{a new drones to joins the network}:a new drone that wants to join the network sends a message to the management server, the input is the new drone unique id if he has one, its carry weight, the output  from the manager server is the unique id(if needed) and the other drones to connect to, the effect is the entrance of the new drone in the network.
+\item \textbf{request for a delivery}: a client can request the delivery of a package form point A to point B.
+
+	\textbf{Input}: the package starting position and the destination;
+
+	\textbf{Output}: there is no output;
+
+	\textbf{Effect}: the election of a drone.
+
+\item \textbf{request for the status of a delivery}:the client can request the status of it's request to the broker server.
+
+ 	\textbf{Input}: ; 
+
+	\textbf{Output}: a message to the client signalling the status of the delivery;
+
+	\textbf{Effect}: letting the client know about the status of the delivery.
+
+%\item \textbf{election of a drone for the delivery}: the network of drones elects the most suitable drone to carry out the delivery, the input is the position, carry weight and battery of each drone, there is no output, the effect is to elect the drone that will make the delivery;
+\item \textbf{message after crash while idle}: a drone that crashes while idle can request to be taken to a repair station,
+
+	\textbf{Input}: the broken drone position; 
+
+	\textbf{Output}: there is no output;
+
+	\textbf{Effect}: the election of a drone that will move the broken drone to a repair station.
+
+\item \textbf{message after crash after being chosen}: a drone that crashes after it has been chosen can request to be taken to a repair station.
+
+	\textbf{Input}: the broken drone position and whether or not it picked up the package; 
+
+	\textbf{Output}: there is no output;
+
+	\textbf{Effect}: the effect is the election of a drone that will move it to a repair station and the election of another drone to carry out the delivery.
+
+\item \textbf{a new drones to joins the network}:a new drone that wants to join the network sends a message to the management server.
+
+	\textbf{Input}: the new drone unique id if he has one, its carry weight and it's position;
+
+	\textbf{Output}: the unique id(if needed) and the other drones to connect to;
+
+	\textbf{Effect}: the entrance of the new drone in the network.
+
 \end{itemize}
 
 \section{Non functional requirements}
