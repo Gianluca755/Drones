@@ -63,11 +63,11 @@ The client position is not considered in our system, drones can be in any point 
 
 The key players in our implementation are:
 \begin{itemize}
-\item \textbf{"Client"}: the client sends a request to the broker server for a delivery. It's also able to query the broker asking for the status of the delivery;
-\item \textbf{"Drone"}: the drones are the entities that move the packages between locations, new drones that want to join the network send a message to the manager server, drones with low battery must go to a charging station to recharge;
-\item \textbf{"Broker server"}: this server receives the requests from clients, it's a single point of failure so it is replicated by a backup copy (it's possible to have more copies);
-\item \textbf{"Manager server"}: this server handles the join of a new drone in the network, a drone can have it's own unique id or can obtain one from this server. Other functionalities are the detection of an offline drone and consequentially offers the best-effort guarantee of successful delivery. The server is a single point of failure so it is replicated by a backup copy (it's possible to have more copies);
-\item \textbf{"Recharging/Repairing station"}: these are stations in fixed points in the map where drones can go to recharge their battery and where broken drones can be brought for repairs.
+\item \textbf{Client}: the client sends a request to the broker server for a delivery. It's also able to query the broker asking for the status of the delivery;
+\item \textbf{Drone}: the drones are the entities that move the packages between locations, new drones that want to join the network send a message to the manager server, drones with low battery must go to a charging station to recharge;
+\item \textbf{Broker server}: this server receives the requests from clients, it's a single point of failure so it is replicated by a backup copy (it's possible to have more copies);
+\item \textbf{Manager server}: this server handles the join of a new drone in the network, a drone can have it's own unique id or can obtain one from this server. Other functionalities are the detection of an offline drone and consequentially offers the best-effort guarantee of successful delivery. The server is a single point of failure so it is replicated by a backup copy (it's possible to have more copies);
+\item \textbf{Recharging/Repairing station}: these are stations in fixed points in the map where drones can go to recharge their battery and where broken drones can be brought for repairs.
 \end{itemize}
 
 
@@ -83,7 +83,23 @@ The system transparencies that we aim to implement are:
 	\item \textbf{reconfiguration transparency}: the entrance of a new drone in the network must have a low overhead.
 \end{itemize}
 
-To implement the process for reaching consensus on which drone has to carry out the request we'll use the Bracha-Toueg fail consensus algorithm.
+For the election of the drone we choose the algorithm "Echo with extinction" over "Bracha-Toueg fail consensus algorithm". The major considerations are that "Bracha-Toueg" needs to know the size of the network (N), this means that the manager needs to calculate and distribute the size. An other important point is that the "Echo" just needs a minor modification for using distances instead of IDs, which are used only in case of conflict due to the same distance; instead the "Bracha-Toueg" needs a major modification that consists in making sure that the majority of the network converges to the minimum distance broadcasted.
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular} {l|l}
+		\hline
+		Echo & Bracha-Toueg \\
+		\hline
+		\hline
+		doesn't need N		& does need N 			\\
+		needs IDs			& doesn't need IDs		\\
+		minor modification 	& major modification	\\
+		\hline
+	\end{tabular}
+\end{table}
+
+Intuition suggests that the "Echo" uses less messages.
 
 \section{Test cases}
 
@@ -117,7 +133,7 @@ The schedule for how you plan to carry our your design and implementation is as 
 \item Design of the system and definition of the functional and non-functional requirements;
 \item Selection of the programming language for the implementation;
 \item Specification of the protocols and algorithms that are used in the system;
-\item Implementation of the entities that play a role in the system and the communication between them; 
+\item Implementation of the entities that play a role in the system and the communication between them;
 \item Testing of each part of the system and the system as a whole;
 \end{enumerate}
 
@@ -141,7 +157,7 @@ The following are the functional requirements required by the project:
 
 \item \textbf{request for the status of a delivery}:the client can request the status of it's request to the broker server.
 
- 	\textbf{Input}: ; 
+ 	\textbf{Input}: ;
 
 	\textbf{Output}: a message to the client signalling the status of the delivery;
 
@@ -150,7 +166,7 @@ The following are the functional requirements required by the project:
 %\item \textbf{election of a drone for the delivery}: the network of drones elects the most suitable drone to carry out the delivery, the input is the position, carry weight and battery of each drone, there is no output, the effect is to elect the drone that will make the delivery;
 \item \textbf{message after crash while idle}: a drone that crashes while idle can request to be taken to a repair station,
 
-	\textbf{Input}: the broken drone position; 
+	\textbf{Input}: the broken drone position;
 
 	\textbf{Output}: there is no output;
 
@@ -158,7 +174,7 @@ The following are the functional requirements required by the project:
 
 \item \textbf{message after crash after being chosen}: a drone that crashes after it has been chosen can request to be taken to a repair station.
 
-	\textbf{Input}: the broken drone position and whether or not it picked up the package; 
+	\textbf{Input}: the broken drone position and whether or not it picked up the package;
 
 	\textbf{Output}: there is no output;
 
