@@ -52,7 +52,7 @@ The two servers are separated due to the fact that we are following the principl
 
 A client can send a request to the broker server for the delivery of a package from point A to point B, a drone will be selected based on its position relative to point A, its  battery and maximum carry weight, the selected drone will carry out the delivery of the package.
 
-If a drone has low battery it will enter reserve mode, it will locate the nearest charging station and it will move in that direction, the charging stations are fixed and their location is known to all drones.
+If a drone has low battery it will enter reserve mode, it will locate the nearest charging station and it will move in that direction, the charging stations are fixed and their location is known to all drones. After a drone refused three orders due to the low battery, it will go to the recharging station, this will mitigate but not prevent the refuse of a package by the fleet; the manager will handle the case.
 
 A drone can crash at any point in time, if it was able to signal the fail, another drone will be selected to transport the broken drone to the nearest charging station, if the broken drone was satisfying a request a second drone will be selected to complete the task.
 
