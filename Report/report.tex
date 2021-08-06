@@ -246,6 +246,7 @@ Details about the implementation: every choice about platforms, languages, softw
 
 Important choices about implementation should be described here; e.g., peculiar data structures.
 
+The storage of data relative to orders in the broker server and, drones and order in the manager server is done through the "Erlang Term Storage" (ETS) for the development mode. In production the function calls should be substituted with the "Disk Erlang Term Storage" (DETS), an other option which require small changes is to use the Mnesia: the database included in Erlang, or some other database. In the development mode we choose the AVL tree as the data structure used by ETS over the hash table, without particular justification.
 
 \chapter{Validation}
 
@@ -261,7 +262,7 @@ The possible extensions are:
 	\item Broker support for multiple manager servers for various fleets of drones.
 	\item Support for warehouses, dynamic number of drones.
 	\item Security concerns should be addressed, in all the parts of the system.
-	\item The backup system could be improved with more servers, this can be achieved not by adding the backup server's addresses in the clients but by an actual broker server between the clients and the group of broker servers. The new actual broker should have one or more copy.
+	\item The backup system could be improved with more servers, this can be achieved not by adding the backup server's addresses in the clients, but by a proxy server that choose the leader of the various broker servers. The broker servers can be configured with a master slave configuration or some more efficient solution like data partitioning. The proxy server can act as load balancer, accordingly to the configuration chosen.
 \end{itemize}
 
 Limit: scheduling performance.
