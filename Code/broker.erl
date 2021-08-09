@@ -11,6 +11,9 @@
                 bckManagerAddr = 0 }
 ).
 
+% Key and value of an Order
+% {ClentID, OrderID} {Source, Destination, Weight, Status}
+% Status ::= awaitBck, awaitManager, inExecution, inDelivery, delivered.
 
 % normal init
 start(PrimaryManagerAddr, BckManagerAddr) ->
@@ -68,8 +71,21 @@ loopPrimary(OrderTable, AddrRecord) ->
 
     receive
     % normal order
-    % result order
+    Msg = { makeOrder, ClientID, OrderID, Source, Destination, Weight } ->
+        ets:insert(OrderTable, {Source, Destination, Weight, awaitBck}),
+        AddrRecord#addr.bckBrokerAddr ! Msg,
+        loopPrimary(OrderTable, AddrRecord) ;
+
+    % confirmation from bck broker
+    { confirmBck, ClientID, OrderID } ->
+        ets:updateTable(OrderTable, {ClientID, OrderID}, awaitManager),
+        {Source, Destination, Weight, Status} = ets:lookup({ClientID, OrderID}),
+        AddrRecord#addr.primaryManagerAddr ! {makeOrder, ClientID, OrderID, Source, Destination, Weight },
+        loopPrimary(OrderTable, AddrRecord) ;
+
+    % result order from manager
     % query
+%   { queryOrder, ClientID, OrderID } ->
     Other -> true
     end
 .
@@ -101,6 +117,16 @@ sendPingLater(From, To) ->
     To ! {From, ping}
 .
 
+%%% utils %%%
+
+updateTable(Table, Key, NewStatus) ->
+    {Source, Destination, Weight, Status} = ets:lookup(Table, Key),
+    Result = ets:insert(Table, {Key, {Source, Destination, Weight, NewStatus} } ), % overwrite
+    if
+        Result == false ->
+            io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
+    end
+.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
