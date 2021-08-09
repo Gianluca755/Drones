@@ -5,14 +5,16 @@
 -module('client').
 
 
--export([delivery_Request/4, status_Request/2]).
+-export([delivery_Request/3, status_Request/2]).
+%sends a delivery requests, randomizes the X and Y coordinates of the delivery location(in 1-100 range) and the weight of the package(in 1-1000 range)
+delivery_Request(Broker_Server_Addr, PosA_X, PosA_Y) ->
+	Broker_Server_Addr ! {self(), {PosA_X, PosA_Y, round(rand:uniform(100)), round(rand:uniform(100)), round(rand:uniform(1000))}}.
 
-delivery_Request(server, posA_X, posA_Y, weight) ->
-	server ! {self(), {posA_X, posA_Y, round(rand:uniform(100)), round(rand:uniform(100)), weight}}.
 
-status_Request(server, id_Req)->
-	server ! {self(), id_Req}, 
+status_Request(Broker_Server_Addr, Id_Req)->
+	Broker_Server_Addr ! {self(), Id_Req}, 
 	receive
-		{server, status}->
-			   status
+		{Broker_Server_Addr, Status}->
+			   Status
 	end.
+
