@@ -7,12 +7,14 @@
 
 -export([delivery_Request/4, status_Request/2]).
 
-delivery_Request(server, posA_X, posA_Y, weight) ->
-	server ! {self(), {posA_X, posA_Y, round(rand:uniform(100)), round(rand:uniform(100)), weight}}.
+delivery_Request(Server, PosA_X, PosA_Y, Weight) ->
+	io:format("~w", ["prova"]).
+	%Server ! {self(), {PosA_X, PosA_Y, round(rand:uniform(100)), round(rand:uniform(100)), Weight}}.
 
-status_Request(server, id_Req)->
-	server ! {self(), id_Req}, 
+status_Request(Server, Id_Req)->
+	Server ! {self(), Id_Req}, 
 	receive
-		{server, status}->
-			   status
+		{Server, Status}->
+			   Status
 	end.
+
