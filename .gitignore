@@ -2,5 +2,5 @@ Report/*.gz
 Report/*.aux
 Report/*.log
 Report/*.pdf
-
+Code/*.beam
 
