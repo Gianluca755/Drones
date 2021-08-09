@@ -13,7 +13,7 @@
 
 % Key and value of an Order
 % {ClentID, OrderID} {Source, Destination, Weight, Status}
-% Status ::= awaitBck, awaitManager, inExecution, inDelivery, delivered.
+% Status ::= awaitBck, awaitManager, inProgress, inDelivery, delivered.
 
 % normal init
 start(PrimaryManagerAddr, BckManagerAddr) ->
@@ -83,10 +83,24 @@ loopPrimary(OrderTable, AddrRecord) ->
         AddrRecord#addr.primaryManagerAddr ! {makeOrder, ClientID, OrderID, Source, Destination, Weight },
         loopPrimary(OrderTable, AddrRecord) ;
 
-    % result order from manager
+    % confirmation from manager
+    Msg = { confirmManager, ClientID, OrderID} ->
+        ets:updateTable(OrderTable, {ClientID, OrderID}, inProgress),
+        AddrRecord#addr.bckBrokerAddr ! Msg,
+        loopPrimary(OrderTable, AddrRecord) ;
+
+    Msg = { droneElected, ClientID, OrderID} ->
+        ets:updateTable(OrderTable, {ClientID, OrderID}, inDelivery),
+        AddrRecord#addr.bckBrokerAddr ! Msg,
+        loopPrimary(OrderTable, AddrRecord) ;
+
     % query
-%   { queryOrder, ClientID, OrderID } ->
-    Other -> true
+    { Pid, queryOrder, ClientID, OrderID } ->
+        {_, _, _, Status} = ets:lookup(OrderTable, {ClentID, OrderID}),
+        Pid ! Status,
+        loopPrimary(OrderTable, AddrRecord) ;
+
+    Other -> io:format("Message not expected: ~w~n", [Other])
     end
 .
 
