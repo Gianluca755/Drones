@@ -12,7 +12,7 @@
 ).
 
 % Key and value of an Order
-% {ClentID, OrderID} {Source, Destination, Weight, Status}
+% {ClientID, OrderID} {Source, Destination, Weight, Status}
 % Status ::= savedNotSent,  savedAwaitBck,         saved,      awaitManagerAwaitBck,          awaitManager
 % bck Status ::=       savedNotSent,  savedAwaitPrimary, saved,               awaitManagerAwaitPrimary, awaitManager
 
@@ -93,7 +93,6 @@ loopPrimary(OrderTable, AddrRecord) ->
     end,
 
     loopPrimary(OrderTable, AddrRecord)
-
 .
 
 
@@ -108,12 +107,11 @@ loopBackup(OrderTable, AddrRecord, FirstPingTime) ->
                     sendPingLater(self(), AddrRecord#addr.primaryBrokerAddr), % send ping after 200 ms
                     CurrentPingTime = 200 + erlang:system_time(milli_seconds),
 
-                    loopBackup(OrderTable, AddrRecord, CurrentPingTime);
+                    loopBackup(OrderTable, AddrRecord, CurrentPingTime)
             end;
 
         true -> io:format("Primary broker not responding: ~w~n", [self()]) % primary not responding
     end
-
 .
 
 
@@ -122,15 +120,15 @@ handleOrderPrimary(OrderTable, AddrRecord) ->
     end,
     %1
     receive Msg = { makeOrder, ClientID, OrderID, Source, Destination, Weight } ->
-        ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, savedNotSent} })
-        PidBckHandler ! Msg,
+        ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, savedNotSent} }),
+        PidBckHandler ! Msg
     end,
     %3
     receive confirmBck ->   updateTableStatus(OrderTable, {ClientID, OrderID}, saved),
-                            PidBckHandler ! confirmPrimary
+                            PidBckHandler ! confirmPrimary,
                             % !!! need to send confirmation to client
 
-                            AddrRecord#addr.primaryManagerAddr ! { makeOrder, self(), ClientID, OrderID, Source, Destination, Weight },
+                            AddrRecord#addr.primaryManagerAddr ! { makeOrder, self(), ClientID, OrderID, Source, Destination, Weight }
     end,
 
     % wait for the response of an handler of the manager
@@ -202,8 +200,8 @@ sendPingLater(From, To) ->
 .
 
 respondQuery(Pid, OrderTable, ClientID, OrderID) ->
-    {_, _, _, Status} = ets:lookup(OrderTable, {ClentID, OrderID}),
-    Pid ! Status ;
+    {_, _, _, Status} = ets:lookup(OrderTable, {ClientID, OrderID}),
+    Pid ! Status 
 .
 
 updateTableStatus(Table, Key, NewStatus) ->

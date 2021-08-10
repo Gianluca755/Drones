@@ -1,4 +1,4 @@
--module(broker).
+-module(broker_old).
 -export([start/2]).
 
 % private
@@ -12,7 +12,7 @@
 ).
 
 % Key and value of an Order
-% {ClentID, OrderID} {Source, Destination, Weight, Status}
+% {ClientID, OrderID} {Source, Destination, Weight, Status}
 % Status ::= awaitBck, awaitManager, inProgressAwaitBck, inProgress, inDeliveryAwaitBck, inDelivery, delivered.
 % bck Status ::=     saved,      awaitManager,      inProgress,                   inDelivery,             delivered
 
@@ -105,7 +105,7 @@ loopPrimary(OrderTable, AddrRecord) ->
 
     % query
     { Pid, queryOrder, ClientID, OrderID } ->
-        {_, _, _, Status} = ets:lookup(OrderTable, {ClentID, OrderID}),
+        {_, _, _, Status} = ets:lookup(OrderTable, {ClientID, OrderID}),
         Pid ! Status ;
 
 
@@ -127,7 +127,7 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
                     sendPingLater(self(), AddrRecord#addr.primaryBrokerAddr), % send ping after 200 ms
                     CurrentPingTime = 200 + erlang:system_time(milli_seconds),
 
-                    loopBackup(OrderTable, AddrRecord, CurrentPingTime)
+                    loopBackup(OrderTable, AddrRecord, CurrentPingTime);
 
                 % normal order from client through primary broker
                 { makeOrder, ClientID, OrderID, Source, Destination, Weight } ->
@@ -136,7 +136,7 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
 
                 % normal order that the primary sent to the manager
                 {awaitManager, ClientID, OrderID} ->
-                    updateTableStatus(OrderTable, {ClientID, OrderID}, awaitManager),
+                    updateTableStatus(OrderTable, {ClientID, OrderID}, awaitManager)
 
             end;
 
