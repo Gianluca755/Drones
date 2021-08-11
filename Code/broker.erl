@@ -79,15 +79,14 @@ loopPrimary(OrderTable, AddrRecord) ->
     { Pid, queryOrder, ClientID, OrderID } ->
         respondQuery(Pid, OrderTable, ClientID, OrderID) ;
 
-    % Client sends an order
-    { makeOrder, _, _, _, _, _ } = Msg ->
+    % Handles all the cases of execution of the order
+    { X, _, _, _, _, _ } = Msg when X == makeOrder or X == inProgress or X == inDelivery or X == delivered ->
         Handler = spawn( broker, handleOrderPrimary, [OrderTable, AddrRecord] ),
-        AddrRecord#addr.bckBrokerAddr ! {makeOrder, Handler},
-        Handler ! Msg % let the new handler process the order
+        Handler ! Msg   % let the new handler apply the order
 
 
-    % Timeout is for the case where the server has no incoming messages for a long period of time, it still has to respond to the ping
-    % but the 10 is for preventing aggressive looping of the process
+    % Timeout is for the case where the server has no incoming messages for a long period of time,
+    % it still has to respond to the ping but the 10 is for preventing aggressive looping of the process
     after
         10 -> true
     end,
@@ -111,10 +110,40 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
                     loopBackup(OrderTable, AddrRecord, CurrentPingTime)
 
                 %% other cases
+
+
             end;
 
         true -> io:format("Primary broker not responding: ~w~n", [self()]) % primary not responding
     end
+.
+
+%%% handlers %%%
+handleOrderPrimary(OrderTable, AddrRecord) ->
+
+    AddrRecord#addr.PrimaryManagerAddr ! {newHandler, self()},
+    % wait for handler of the backup
+    receive {bindAdderess, PidBckHandler} -> true
+    end,
+    receive { X, PidSource, ClientID, OrderID, Description } = Msg
+            when X == makeOrder or X == inProgress or X == inDelivery or X == delivered -> true
+    end,
+
+    PidBckHandler ! Msg, % send msg to broker bck
+    receive confirmBck -> true
+    end,
+    % saving the status order
+    if
+        X == makeOrder ->
+            {Source, Destination, Weight} = Description, % extract values
+            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } )
+            % send ack to the client
+            % send order to the manager
+            ;
+        true -> 
+
+    end
+
 .
 
 

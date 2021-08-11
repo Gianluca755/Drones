@@ -83,7 +83,7 @@ The system transparencies that we aim to implement are:
 	\item \textbf{reconfiguration transparency}: the entrance of a new drone in the network must have a low overhead.
 \end{itemize}
 
-For the election of the drone we choose the algorithm "Echo with extinction" over "Bracha-Toueg fail consensus algorithm". The major considerations are that "Bracha-Toueg" needs to know the size of the network (N), this means that the manager needs to calculate and distribute the size. An other important point is that the "Echo" just needs a minor modification for using distances instead of IDs, which are used only in case of conflict due to the same distance; instead the "Bracha-Toueg" needs a major modification that consists in making sure that the majority of the network converges to the minimum distance broadcasted.
+For the election of the drone we choose the algorithm "Echo with extinction" over "Bracha-Toueg fail consensus algorithm". The major considerations are that "Bracha-Toueg" needs to know the size of the network (N), this means that the manager needs to calculate and distribute the size. An other important point is that the "Echo" just needs a minor modification for using distances instead of IDs, which are used only in case of conflict due to the same distance; instead the "Bracha-Toueg" needs a major modification that consists in making sure that the majority of the network converges to the minimum distance broadcasted. Intuition suggests that the "Echo" uses less messages.
 
 \begin{table}[h!]
 	\centering
@@ -100,8 +100,7 @@ For the election of the drone we choose the algorithm "Echo with extinction" ove
 	\end{tabular}
 \end{table}
 
-Intuition suggests that the "Echo" uses less messages.
-We utilized the simplify assumption that the channels offer a reliable delivery of the data packets. This isn't an unrealistic assumption since we can imagine to transfer data packets (UDP) over an overlay TCP network.
+We utilized the simplify assumption that the channels offer reliable delivery without data duplication. This isn't an unrealistic assumption since we can imagine to transfer data packets (UDP) over an overlay TCP network.
 
 \section{Test cases}
 
