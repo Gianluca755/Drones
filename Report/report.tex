@@ -219,6 +219,14 @@ This chapter is devoted to the description of the general architectures, and spe
 Describe the components of your systems: modules/objects/components/services.
 For each component, describe the functionalities it implements, and by who is used.
 
+\subsection{Primary backup schema}
+Since the broker and the manager servers are both single point of failure, it has been chosen to implement a backup for them. The schema used is the simplest: one primary and one backup.
+
+After some experiments it has been chosen to handle the messages received by the servers, (broker and manager) in the following way: the loop process exchange pings with its backup and when receives a message related to the orders of the clients it start a new Erlang process to handle the message. This new Erlang process contacts the backup server which create an other Erlang process. The two new processes synchronize the status of the order between the primary and backup server.
+
+This approach permits an efficient use of the resources since it prevents blocking, allows to handle a vast number of messages thanks to the lightweight Erlang processes. Moreover when a fail happened it will disrupt only a small step of the execution of an order, instead of the entire server.
+
+
 \section{Protocols and algorithms}
 Communication between components.  UML sequence diagrams go here.
 \begin{figure}[h!]

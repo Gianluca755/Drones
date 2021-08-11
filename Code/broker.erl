@@ -108,10 +108,10 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
                     sendPingLater(self(), AddrRecord#addr.primaryBrokerAddr), % send ping after 200 ms
                     CurrentPingTime = 200 + erlang:system_time(milli_seconds),
 
-                    loopBackup(OrderTable, AddrRecord, CurrentPingTime)
+                    loopBackup(OrderTable, AddrRecord, CurrentPingTime);
 
                 %% other cases
-
+                {newHandler, Pid} -> spawn(broker, handleOrderBck, [OrderTable, AddrRecord, Pid])
 
             end;
 
@@ -139,8 +139,8 @@ handleOrderPrimary(OrderTable, AddrRecord) ->
         X == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } )
-            % send ack to the client
-            % send order to the manager
+            PidSource ! confirmOrder  % send ack to the client
+            AddrRecord#addr.primaryManagerAddr ! Msg  % send order to the manager
             ;
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, X) % X is the new state
     end
