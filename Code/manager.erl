@@ -57,6 +57,7 @@ startBck(Primary, PrimaryBrokerAddr, BckBrokerAddr) ->
 
 %%% end init %%%
 
+
 %%% processes loops %%%
 
 loopPrimary(OrderTable, AddrRecord) ->
@@ -71,10 +72,14 @@ loopPrimary(OrderTable, AddrRecord) ->
 
     receive
 
+    % receive make order, save, reply to broker with inProgress, select drone
     { makeOrder, _, _, _, _, _ } = Msg ->
         Handler = spawn( broker, handleOrderPrimary, [OrderTable, AddrRecord] ),
         Handler ! Msg   % let the new handler apply the order
 
+    % receive inDelivery from a drone, save info and new status, inform the broker
+
+    % receive delivered from a drone, save info and new status, inform the broker
 
     % Timeout is for the case where the server has no incoming messages for a long period of time,
     % it still has to respond to the ping but the 10 is for preventing aggressive looping of the process
@@ -112,10 +117,16 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
 %%% handlers %%%
 
 handleOrderPrimary(OrderTable, AddrRecord) ->
+    AddrRecord#addr.bckManagerAddr ! {newHandler, self()},
+    % wait for handler of the backup
+    receive {bindAdderess, PidBckHandler} -> true
+    end
 .
 
 
 handleOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
+    PrimaryHandlerAddr ! {bindAdderess, self()},
+
 .
 
 
