@@ -2,7 +2,8 @@
 -export([start/2]).
 
 % private
--export([startPrimary/2, loopPrimary/2, startBck/3, loopBackup/3, sendPingLater/2]).
+-export([startPrimary/2, loopPrimary/2, startBck/3, loopBackup/3]).
+-export([handleOrderPrimary/2, handleOrderBck/3, sendPingLater/2, respondQuery/4]).
 
 
 -record(addr, { primaryBrokerAddr = 0,
@@ -13,11 +14,8 @@
 
 % Key and value of an Order
 % {ClientID, OrderID} {Source, Destination, Weight, Status}
-% Status ::= savedNotSent,  savedAwaitBck,         saved,      awaitManagerAwaitBck,          awaitManager
-% bck Status ::=       savedNotSent,  savedAwaitPrimary, saved,               awaitManagerAwaitPrimary, awaitManager
-
-% Status ::=  inProgressAwaitBck,         inProgress,      inDeliveryAwaitBck,      inDelivery,       deliveredAwaitBck,   delivered
-% bck Status ::=      inProgressAwaitPrimary,   inProgress,        inDeliveryAwaitPrimary,   inDelivery,  deliveredAwaitPrimary,  delivered
+% Status ::= savedNotSent,      saved,      inProgress,    inDelivery,    delivered.
+% bck Status ::= savedNotSent,       saved,         inProgress,    inDelivery,    delivered.
 
 
 % normal init
@@ -96,7 +94,7 @@ loopPrimary(OrderTable, AddrRecord) ->
 .
 
 
-loopBackup(OrderTable, AddrRecord, FirstPingTime) ->
+loopBackup(OrderTable, AddrRecord, LastPingTime) ->
     Time = erlang:system_time(milli_seconds),
     if
         Time - LastPingTime < 2000  ->
@@ -163,7 +161,7 @@ handleOrderPrimary(OrderTable, AddrRecord) ->
 handleOrderBck(OrderTable, AddrRecord, PidPrimaryHandler) ->
     PidPrimaryHandler ! {bindAdderess, self()}, % send address to primary handler
     %2
-    receive Msg = { makeOrder, ClientID, OrderID, Source, Destination, Weight } ->
+    receive { makeOrder, ClientID, OrderID, Source, Destination, Weight } ->
         ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, savedNotSent}} ),
         PidPrimaryHandler ! confirmBck
     end,
@@ -201,11 +199,11 @@ sendPingLater(From, To) ->
 
 respondQuery(Pid, OrderTable, ClientID, OrderID) ->
     {_, _, _, Status} = ets:lookup(OrderTable, {ClientID, OrderID}),
-    Pid ! Status 
+    Pid ! Status
 .
 
 updateTableStatus(Table, Key, NewStatus) ->
-    {Source, Destination, Weight, Status} = ets:lookup(Table, Key),
+    {Source, Destination, Weight, _Status} = ets:lookup(Table, Key),
     Result = ets:insert(Table, {Key, {Source, Destination, Weight, NewStatus} } ), % overwrite
     if
         Result == false ->
