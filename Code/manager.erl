@@ -1,7 +1,12 @@
 -module(manager).
 
 -export([start/0]).
+
+
 -export([startPrimary/2, loopPrimary/3, startBck/3, loopBackup/4]).
+-export([handlerOrderPrimary/3, handlerOrderBck/4]).
+-export([pick_rand/1, pick_rand/2, pick_rand/3 ]).
+
 
 -record(addr, { primaryBrokerAddr = 0,
                 bckBrokerAddr = 0,
@@ -77,11 +82,11 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
     % receive make order, save, reply to broker with inProgress, select random drone
     { makeOrder, _, _, _, _, _ } = Msg ->
         Handler = spawn( manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable] ),
-        Handler ! Msg   % let the new handler apply the order
+        Handler ! Msg ;   % let the new handler apply the order
 
     % receive inDelivery from a drone, save info and new status, inform the broker
     % receive delivered from a drone, save info and new status, inform the broker
-    { Type, _PidDrone, _ClientID, _OrderID, _Description } = Msg when (Type == inDelivery ; Type == inProgress) ->
+    { Type, _PidDrone, _ClientID, _OrderID, _Description } = Msg when Type == inDelivery ; Type == inProgress ->
         Handler = spawn(manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable]),
         Handler ! Msg
 
@@ -127,7 +132,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
     end,
 
     % process the msg and bind the variables
-    receive { Type, PidClient, ClientID, OrderID, Description } = Msg
+    receive { Type, _PidClient, ClientID, OrderID, Description } = Msg
             when Type == makeOrder ; Type == inDelivery ; Type == delivered -> true
     end,
 
@@ -153,7 +158,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             end,
 
             % update table drone
-            assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID )
+            assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
 
             % send confirmation to the broker
             AddrRecord#addr.primaryBrokerAddr !
@@ -183,7 +188,7 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
     PrimaryHandlerAddr ! {bindAdderess, self()},
 
     % process the msg and bind the variables
-    receive { Type, PidClient, ClientID, OrderID, Description } = Msg
+    receive { Type, PidClient, ClientID, OrderID, Description }
             when Type == makeOrder ; Type == inDelivery ; Type == delivered -> true
     end,
 
@@ -210,10 +215,10 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
 assignDroneToOrder(OrderTable, Key, DroneID) ->
 
     {Source, Destination, Weight, _DefoultDroneID, Status} = ets:lookup(OrderTable, Key),
-    Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, Status} } ), % overwrite
+    Result = ets:insert(OrderTable, {Key, {Source, Destination, Weight, DroneID, Status} } ), % overwrite
     if
         Result == false ->
-            io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
+            io:format("Error failed attempt to modify the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, DroneID} }])
     end
 .
 
@@ -222,7 +227,7 @@ updateTableStatus(Table, Key, NewStatus) ->
     Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, NewStatus} } ), % overwrite
     if
         Result == false ->
-            io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
+            io:format("Error failed attempt to modify the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
     end
 .
 
@@ -230,21 +235,21 @@ updateTableStatus(Table, Key, NewStatus) ->
 
 % returns an element
 pick_rand(Table) ->
-    Size = ets:info(X, size),
+    Size = ets:info(Table, size),
     Rand = rand:uniform(Size),
     pick_rand(Table, Rand)
 .
 
 pick_rand(Table, N) ->
     if
-        N == 1 -> lookup( Table, ets:first(Table) ) ;
+        N == 1 -> ets:lookup( Table, ets:first(Table) ) ;
         true   -> First = ets:first(Table), pick_rand(Table, First, N-1)
     end
 .
 
 pick_rand(Table, Key, N) ->
     if
-        N == 0 -> lookup(Table, Key);
+        N == 0 -> ets:lookup(Table, Key);
         N > 0  -> X = ets:next(Table, Key), pick_rand(Table, X, N-1)
     end
 .
