@@ -17,7 +17,7 @@ spawn_loop_start()->
 
 %spawns a client with random X and Y coordinates(in 1-100 range), does it continuously after a random ammount of time
 spawn_loop(ClientID, Broker_Server_Addr)->
-	spawn(client, delivery_Request, [ClientID, 0, Broker_Server_Addr, round(rand:uniform(100)), round(rand:uniform(100))]),
+	spawn(client, delivery_Request, [ClientID, 0, Broker_Server_Addr, rand:uniform(100), rand:uniform(100)]),
 	timer:sleep(round(timer:seconds(rand:uniform(10)))),
 	spawn_loop(ClientID, Broker_Server_Addr).
 	
