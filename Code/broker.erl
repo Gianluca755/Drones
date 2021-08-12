@@ -133,14 +133,14 @@ handlerOrderPrimary(OrderTable, AddrRecord) ->
     end,
 
     PidBckHandler ! Msg, % send msg to broker bck
-    receive confirmBck -> true
+    receive confirmedBck -> true
     end,
     % saving the status order
     if
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } ),
-            PidSource ! confirmOrder , % send ack to the client
+            PidSource ! confirmedOrder , % send ack to the client
             AddrRecord#addr.primaryManagerAddr ! Msg  % send order to the manager
             ;
         true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
@@ -160,7 +160,7 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
         true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
     end,
 
-    PrimaryHandlerAddr ! confirmBck
+    PrimaryHandlerAddr ! confirmedBck
 .
 
 

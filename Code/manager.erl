@@ -137,7 +137,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
     end,
 
     PidBckHandler ! Msg, % send msg to manager bck and wait confirmation
-    receive confirmBck -> true
+    receive confirmedBck -> true
     end,
 
     % handling the order
@@ -149,12 +149,12 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             % select random drone
             {DroneID, DroneAddr} = pick_rand(DroneTable),
             DroneAddr ! Msg,
-            receive confirmDrone -> true
+            receive confirmedDrone -> true
             % add case of failure
             end,
 
             PidBckHandler ! DroneID,
-            receive confirmBck -> true
+            receive confirmedBck -> true
             end,
 
             % update table drone
@@ -196,16 +196,16 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, 0, saved} } ),
-            PrimaryHandlerAddr ! confirmBck,
+            PrimaryHandlerAddr ! confirmedBck,
 
             receive DroneID -> true
             end,
             assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
 
-            PrimaryHandlerAddr ! confirmBck;
+            PrimaryHandlerAddr ! confirmedBck;
 
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type),
-                PrimaryHandlerAddr ! confirmBck
+                PrimaryHandlerAddr ! confirmedBck
     end
 .
 

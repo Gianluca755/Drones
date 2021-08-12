@@ -228,7 +228,37 @@ This approach permits an efficient use of the resources since it prevents blocki
 
 
 \section{Protocols and algorithms}
-Communication between components.  UML sequence diagrams go here.
+Communication between components.
+
+\subsection{Messages: formats and effects}
+
+From client to broker
+	\begin{itemize}
+		\item New order: "\{makeOrder, AdressClient, ClientID, OrderID, {Source, Destination}, Weight\}"
+		Source and Destination are referring to the location of the package, Weight is also referring to the package. The broker acknowledge it with "confirmedOrder" when the order has been reliably saved.
+
+		\item Query order
+	\end{itemize}
+From broker to manager
+	\begin{itemize}
+		\item
+	\end{itemize}
+From manager to broker
+	\begin{itemize}
+		\item
+	\end{itemize}
+From manager to drones
+	\begin{itemize}
+		\item
+	\end{itemize}
+From drones to manager
+	\begin{itemize}
+		\item
+	\end{itemize}
+
+
+\vspace{1em}
+UML sequence diagrams go here.
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\linewidth]{New-drone}
@@ -254,7 +284,7 @@ Details about the implementation: every choice about platforms, languages, softw
 
 Important choices about implementation should be described here; e.g., peculiar data structures.
 
-The storage of data relative to orders in the broker server and, drones and order in the manager server is done through the "Erlang Term Storage" (ETS) for the development mode. In production the function calls should be substituted with the "Disk Erlang Term Storage" (DETS), an other option which require small changes is to use the Mnesia: the database included in Erlang, or some other database. In the development mode we choose the AVL tree as the data structure used by ETS over the hash table, without particular justification.
+The storage of data relative to orders in the broker server and, drones and order in the manager server is done through the "Erlang Term Storage" (ETS) for the development mode with the purpose of preventing SSD consumption. In production the function calls should be substituted with the "Disk Erlang Term Storage" (DETS), an other option which require small changes is to use the Mnesia: the database included in Erlang, or some other database. In the development mode we choose the AVL tree as the data structure used by ETS over the hash table, without particular justification.
 
 \chapter{Validation}
 
