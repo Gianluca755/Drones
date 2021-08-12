@@ -245,7 +245,20 @@ Also, put here a detailed description of distributed algorithms used to solve sp
 Which nodes and platforms involved, and where each component is deployed.
 
 \section{Development plan}
-Since it is difficult to predict just how hard implementing a new system will be, you should formulate as a set of ``tiers,'' where the basic tier is something you’re sure you can complete, and the additional tiers add more features, at both the application and the system level.
+The base functionalities that the system must offer are:
+\begin{itemize}
+\item a client can make a delivery request;
+\item communication between the drones an with the management server for the drone election;
+\item selection of a new drone to complete a delivery if the current one crashes;
+\item addition of more drones.
+\end{itemize}
+The optional functionalities are:
+\begin{itemize}
+\item consider the weight of the package in the selection of the drone;
+\item a method for the client to request the status of the delivery;
+\end{itemize}
+
+%Since it is difficult to predict just how hard implementing a new system will be, you should formulate as a set of ``tiers,'' where the basic tier is something you’re sure you can complete, and the additional tiers add more features, at both the application and the system level.
 
 \chapter{Implementation}
 
