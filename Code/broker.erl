@@ -77,7 +77,7 @@ loopPrimary(OrderTable, AddrRecord) ->
 
     receive
     % query of an order
-    { Pid, queryOrder, ClientID, OrderID } ->
+    { queryOrder, Pid, ClientID, OrderID } ->
         respondQuery(Pid, OrderTable, ClientID, OrderID) ;
 
     % Handles all the cases of execution of the order
@@ -165,7 +165,11 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
 
 
 respondQuery(Pid, OrderTable, ClientID, OrderID) ->
-    {_, _, _, Status} = ets:lookup(OrderTable, {ClientID, OrderID}),
-    Pid ! Status
+    case ets:lookup(OrderTable, {ClientID, OrderID}) of
+        false -> Pid ! orderNotPresent
+        {_, _, _, Status} -> Pid ! Status
+    end
 .
+
+
 

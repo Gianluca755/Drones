@@ -230,32 +230,41 @@ This approach permits an efficient use of the resources since it prevents blocki
 \section{Protocols and algorithms}
 Communication between components.
 
+\subsection{Status of the order}
+bla bla "inProgress", "inDelivery", "delivered"
+
+
 \subsection{Messages: formats and effects}
 
 From client to broker
-	\begin{itemize}
-		\item New order: "\{makeOrder, AdressClient, ClientID, OrderID, {Source, Destination}, Weight\}"
-		Source and Destination are referring to the location of the package, Weight is also referring to the package. The broker acknowledge it with "confirmedOrder" when the order has been reliably saved.
+\begin{itemize}
+	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{\{Source, Destination\}, Weight\}\}"
+	Source and Destination are referring to the location of the package, Weight is also referring to the package. The broker acknowledge it with "confirmedOrder" when the order has been reliably saved.
 
-		\item Query order
-	\end{itemize}
+	\item Query order: "\{queryOrder, ClientAddress, ClientID, OrderID\}". The broker replies with "orderNotPresent" or with the status of the order.
+\end{itemize} \vspace{1em}
 From broker to manager
-	\begin{itemize}
-		\item
-	\end{itemize}
+\begin{itemize}
+	\item New order: "\{ Type, PidSource, ClientID, OrderID, Description \}"
+\end{itemize} \vspace{1em}
 From manager to broker
-	\begin{itemize}
-		\item
-	\end{itemize}
+\begin{itemize}
+	\item Update of an order:
+\end{itemize}\vspace{1em}
 From manager to drones
-	\begin{itemize}
-		\item
-	\end{itemize}
+\begin{itemize}
+	\item New order:
+\end{itemize} \vspace{1em}
 From drones to manager
-	\begin{itemize}
-		\item
-	\end{itemize}
-
+\begin{itemize}
+	\item Election result:
+	\item Package delivered:
+	\item Registration:
+\end{itemize} \vspace{1em}
+From drones to drones
+\begin{itemize}
+	\item Echo election:
+\end{itemize}
 
 \vspace{1em}
 UML sequence diagrams go here.
