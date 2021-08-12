@@ -145,7 +145,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             {DroneID, DroneAddr} = pick_rand(DroneTable),
             DroneAddr ! Msg,
             receive confirmDrone -> true
-            % time out
+            % add case of failure
             end,
 
             PidBckHandler ! DroneID,
@@ -153,30 +153,80 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             end,
 
             % update table drone
-
+            assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID )
 
             % send confirmation to the broker
-            PidSource ! { inProgress,
-                          AddrRecord#addr.primaryManagerAddr,
-                          ClientID,
-                          OrderID,
-                          {}  % empty description because it's already known by the broker
+            AddrRecord#addr.primaryBrokerAddr !
+            {   inProgress,
+                AddrRecord#addr.primaryManagerAddr,
+                ClientID,
+                OrderID,
+                {}  % empty description because it's already known by the broker
             }
             ;
 
-        true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
-    end
+        % cases inDelivery and delivered
+        true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type),
+                AddrRecord#addr.primaryBrokerAddr !
+                {   Type,
+                    AddrRecord#addr.primaryManagerAddr,
+                    ClientID,
+                    OrderID,
+                    {}  % empty description because it's already known by the broker
+                }
 
+    end
 .
 
 
 handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
     PrimaryHandlerAddr ! {bindAdderess, self()},
 
+    % process the msg and bind the variables
+    receive { Type, PidClient, ClientID, OrderID, Description } = Msg
+            when Type == makeOrder ; Type == inDelivery ; Type == delivered -> true
+    end,
+
+    if
+        Type == makeOrder ->
+            {Source, Destination, Weight} = Description, % extract values
+            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, 0, saved} } ),
+            PrimaryHandlerAddr ! confirmBck,
+
+            receive DroneID -> true
+            end,
+            assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
+
+            PrimaryHandlerAddr ! confirmBck;
+
+        true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type),
+                PrimaryHandlerAddr ! confirmBck
+    end
 .
 
 
 %%% utils %%%
+
+assignDroneToOrder(OrderTable, Key, DroneID) ->
+
+    {Source, Destination, Weight, _DefoultDroneID, Status} = ets:lookup(OrderTable, Key),
+    Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, Status} } ), % overwrite
+    if
+        Result == false ->
+            io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
+    end
+.
+
+updateTableStatus(Table, Key, NewStatus) ->
+    {Source, Destination, Weight, DroneID, _Status} = ets:lookup(Table, Key),
+    Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, NewStatus} } ), % overwrite
+    if
+        Result == false ->
+            io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
+    end
+.
+
+
 
 % returns an element
 pick_rand(Table) ->
