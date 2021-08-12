@@ -231,8 +231,12 @@ This approach permits an efficient use of the resources since it prevents blocki
 Communication between components.
 
 \subsection{Status of the order}
-bla bla "inProgress", "inDelivery", "delivered"
-
+The delivery order from the client can be in one of the following status:
+\begin{itemize}
+\item \textbf{"inProgress"}: and order is in this state after the order message has been received by the management drone and while a drone is being selected to carry out the order;
+\item \textbf{"inDelivery"}:and order is in this state after the drone has been selected, while it's moving to pick up the package and while it is moving the package to the destination ;
+\item \textbf{"delivered"}:and order is in this state after the package has been delivered to it's destination and the management server recieves the "delivered" message form the drone;
+\end{itemize}
 
 \subsection{Messages: formats and effects}
 
