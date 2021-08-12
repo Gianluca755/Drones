@@ -3,7 +3,7 @@
 
 % private
 -export([startPrimary/2, loopPrimary/2, startBck/3, loopBackup/3]).
--export([handleOrderPrimary/2, handleOrderBck/3]).
+-export([handlerOrderPrimary/2, handlerOrderBck/3]).
 
 -record(addr, { primaryBrokerAddr = 0,
                 bckBrokerAddr = 0,
@@ -81,8 +81,8 @@ loopPrimary(OrderTable, AddrRecord) ->
         respondQuery(Pid, OrderTable, ClientID, OrderID) ;
 
     % Handles all the cases of execution of the order
-    { X, _, _, _, _, _ } = Msg when X == makeOrder ; X == inProgress ; X == inDelivery ; X == delivered ->
-        Handler = spawn( broker, handleOrderPrimary, [OrderTable, AddrRecord] ),
+    { Type, _, _, _, _, _ } = Msg when Type == makeOrder ; Type == inProgress ; Type == inDelivery ; Type == delivered ->
+        Handler = spawn( broker, handlerOrderPrimary, [OrderTable, AddrRecord] ),
         Handler ! Msg   % let the new handler apply the order
 
 
@@ -111,7 +111,7 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
                     loopBackup(OrderTable, AddrRecord, CurrentPingTime);
 
                 %% other cases
-                {newHandler, Pid} -> spawn(broker, handleOrderBck, [OrderTable, AddrRecord, Pid])
+                {newHandler, Pid} -> spawn(broker, handlerOrderBck, [OrderTable, AddrRecord, Pid])
 
             end;
 
@@ -121,14 +121,15 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
 
 %%% handlers %%%
 
-handleOrderPrimary(OrderTable, AddrRecord) ->
+handlerOrderPrimary(OrderTable, AddrRecord) ->
 
     AddrRecord#addr.bckBrokerAddr ! {newHandler, self()},
     % wait for handler of the backup
     receive {bindAdderess, PidBckHandler} -> true
     end,
-    receive { X, PidSource, ClientID, OrderID, Description } = Msg
-            when X == makeOrder ; X == inProgress ; X == inDelivery ; X == delivered -> true
+    % process the msg and bind the variables
+    receive { Type, PidSource, ClientID, OrderID, Description } = Msg
+            when Type == makeOrder ; Type == inProgress ; Type == inDelivery ; Type == delivered -> true
     end,
 
     PidBckHandler ! Msg, % send msg to broker bck
@@ -136,27 +137,27 @@ handleOrderPrimary(OrderTable, AddrRecord) ->
     end,
     % saving the status order
     if
-        X == makeOrder ->
+        Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } )
             PidSource ! confirmOrder  % send ack to the client
             AddrRecord#addr.primaryManagerAddr ! Msg  % send order to the manager
             ;
-        true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, X) % X is the new state
+        true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
     end
 .
 
-handleOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
+handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
     PrimaryHandlerAddr ! {bindAdderess, self()},
 
-    receive { X, _PidSource, ClientID, OrderID, Description }
-            when X == makeOrder ; X == inProgress ; X == inDelivery ; X == delivered -> true
+    receive { Type, _PidSource, ClientID, OrderID, Description }
+            when Type == makeOrder ; Type == inProgress ; Type == inDelivery ; Type == delivered -> true
     end,
     if
-        X == makeOrder ->
+        Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } );
-        true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, X) % X is the new state
+        true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
     end,
 
     PrimaryHandlerAddr ! confirmBck

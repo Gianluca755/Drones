@@ -1,5 +1,0 @@
-managers
-brokers
-drones
-clients
-
