@@ -15,10 +15,10 @@ initElection(DroneAddr, DronePosition, Neighbours) ->
 
     % choose the best between the initiator node and the neighbours
 
-    % if needed propagate decision
-
-
     % if this node can't partecepate due to low battery power, send a note the loop process of the drone
+
+
+    % if needed propagate decision
 
 .
 
@@ -36,12 +36,15 @@ nonInitElection(DroneAddr, DronePosition, Neighbours) ->
 
     % make local decision
 
+    % if this node can't partecepate due to low battery power, send a note the loop process of the drone
+
+
     % push decision to parent
 
     % wait for propagation of the election result
 
 
-    % if this node can't partecepate due to low battery power, send a note the loop process of the drone
+
 .
 
 
