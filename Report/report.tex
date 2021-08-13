@@ -240,7 +240,7 @@ The delivery order from the client can be in one of the following status:
 From client to broker
 \begin{itemize}
 	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}"
-	Source and Destination are referring to the location of the package, Weight is also referring to the package. The broker acknowledge it with "confirmedOrder" when the order has been reliably saved.
+	Source and Destination are tuples {X, Y} referring to the starting location and the destination location of the package, Weight refers to the weight of the package. The broker acknowledge it with "confirmedOrder" when the order has been reliably saved.
 
 	\item Query order: "\{queryOrder, ClientAddress, ClientID, OrderID\}". The broker replies with "orderNotPresent" if there is no order with the given OrderID and ClientID or with the status of the order.
 \end{itemize} \vspace{1em}

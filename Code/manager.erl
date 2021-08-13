@@ -82,7 +82,7 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
     % receive make order, save, reply to broker with inProgress, select random drone
     % receive inDelivery (means elected) from a drone, save info and new status, inform the broker
     % receive delivered from a drone, save info and new status, inform the broker
-    { Type, _ClientAddress, _ClientID, _OrderID, _Description } = Msg
+    { Type, _Client_or_Drone_Address, _ClientID, _OrderID, _Description } = Msg
     when Type == makeOrder ; Type == inDelivery ; Type == inProgress ->
         Handler = spawn( manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable] ),
         Handler ! Msg ;   % let the new handler apply the order
