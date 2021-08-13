@@ -83,8 +83,10 @@ The system transparencies that we aim to implement are:
 	\item \textbf{reconfiguration transparency}: the entrance of a new drone in the network must have a low overhead.
 \end{itemize}
 
+\subsection{Assumption}
 We utilized the simplify assumption that the channels offer reliable delivery without data duplication. This isn't an unrealistic assumption since we can imagine to transfer data packets (UDP) over an overlay TCP network.
 
+\subsection{Election Algorithm}
 For the election of the drone we firstly considered the "Bracha-Toueg fail consensus algorithm", then the "Echo with extinction", then we reached the conclusion that also the "Echo" would work. The "Bracha-Toueg" was discarded because it needs to know the size of the network (N), this means that the manager needs to calculate and distribute the size. The other problem was that the "Bracha-Toueg" needs a major modification which consists in making sure that the majority of the network converges to the minimum distance known by the network.
 
 The differences between the "Echo" and "Echo with extinction" are that: in the "Echo" the algorithm has a single initiator, that makes the last decision in the election, which needs to be broadcasted; while in the "Echo with extinction" the initial node is really a propagator of the request for all the nodes start a wave, so this initial node make the broadcast of the order and when the execution terminates the elected node knows that is elected.
@@ -92,7 +94,9 @@ The differences between the "Echo" and "Echo with extinction" are that: in the "
 The message complexity for the "Echo" algorithm is $2M$ plus the propagation complexity of the decision $O(M)$ where $M$ is the number of edges in the network. So the total complexity is $ O(M) $.
 Instead the message complexity for the "Echo with extinction" is $O(M)$ for the initial broadcast and then $O(N M)$ for the algorithm.
 
-The decision is obvious: the "Echo" is the better choice in the worst case. The drawback is that the failure of a drone during an election will bock the election.
+The decision is obvious: the "Echo" is the better choice in the worst case. The drawback is that the failure of a drone during an election will block the election; this situation is mitigated by the manager that will restart the election while if a drone doesn't respond it will be removed from the list of neighbours on the drones involved. The "Echo" has been chosen because the manager have to handle the generic failure of a drone, and the failed election is a just particular case.
+
+The "Echo" algorithm has been chosen due to the lower message complexity, that's because a comparison of the performance of the two algorithm over multiple election, in real cases, over a realistic network topology, is outside the scope of this project.
 
 Note: the criterion used for the decision of the node is based on distances instead of IDs, the IDs are used only in case of conflict due to same distance.
 
@@ -260,15 +264,19 @@ From manager to drones
 	This is always the original message, the random drone will start the election without notify the manager.
 
 	\item Drone status:
+
+	\item Order status:
 \end{itemize} \vspace{1em}
 From drones to manager
 \begin{itemize}
 	\item Election result: "\{inDelivery, DroneAddress, ClientID, OrderID, \{\} \}"
 
-	\item Package delivered: "\{delivered, \{\}, ClientID, OrderID, \{\} \}"
-	The drone will send the message to the manager which will reliably store it. The manager will reply with a confirmation, and will notify the broker.
+	\item Package delivered: "\{delivered, DroneAddress, ClientID, OrderID, \{\} \}"
+	The drone will send the message to the manager which will reliably store it. The manager will reply with "confirmDelivered", and will notify the broker.
 
 	\item Registration:
+
+	\item Failure:
 \end{itemize} \vspace{1em}
 From drones to drones
 \begin{itemize}

@@ -131,7 +131,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
     end,
 
     % process the msg and bind the variables
-    receive { Type, _PidClient, ClientID, OrderID, Description } = Msg
+    receive { Type, PidClient, ClientID, OrderID, Description } = Msg
             when Type == makeOrder ; Type == inDelivery ; Type == delivered -> true
     end,
 
@@ -175,6 +175,9 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
 
         % cases inDelivery and delivered
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type),
+                if Type == delivered -> PidClient ! confirmDelivered % confirmation sent to drone address
+                end,
+
                 AddrRecord#addr.primaryBrokerAddr !
                 {   Type,
                     {},
@@ -210,6 +213,15 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type),
                 PrimaryHandlerAddr ! confirmedBck
     end
+.
+
+% parallel process that periodically checks the status of the drones
+checkDronesStatus() ->
+.
+
+
+% parallel process that checks the status of incompleted orders after a threshold time has passed
+checkOrdersStatus() ->
 .
 
 
