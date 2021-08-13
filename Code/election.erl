@@ -12,7 +12,7 @@ initElection(DroneAddr, DronePosition, Neighbours) ->
     sendToAll(Order, Neighbours), % CHANGE ORDER
     Results = receiveN(length(Neighbours), []),
 
-    % choose the best beetween the initiator node and the neighbours
+    % choose the best between the initiator node and the neighbours
 
     % if needed propagate decision
 

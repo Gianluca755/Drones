@@ -83,24 +83,19 @@ The system transparencies that we aim to implement are:
 	\item \textbf{reconfiguration transparency}: the entrance of a new drone in the network must have a low overhead.
 \end{itemize}
 
-For the election of the drone we choose the algorithm "Echo with extinction" over "Bracha-Toueg fail consensus algorithm". The major considerations are that "Bracha-Toueg" needs to know the size of the network (N), this means that the manager needs to calculate and distribute the size. An other important point is that the "Echo" just needs a minor modification for using distances instead of IDs, which are used only in case of conflict due to the same distance; instead the "Bracha-Toueg" needs a major modification that consists in making sure that the majority of the network converges to the minimum distance broadcasted. Intuition suggests that the "Echo" uses less messages.
-
-\begin{table}[h!]
-	\centering
-	\begin{tabular} {l|l}
-		\hline
-		Echo & Bracha-Toueg \\
-		\hline
-		\hline
-		doesn't need N		& does need N 			\\
-		delivery of msgs to adjacent	& delivery of msgs to all nodes \\
-		needs IDs			& doesn't need IDs		\\
-		minor modification 	& major modification	\\
-		\hline
-	\end{tabular}
-\end{table}
-
 We utilized the simplify assumption that the channels offer reliable delivery without data duplication. This isn't an unrealistic assumption since we can imagine to transfer data packets (UDP) over an overlay TCP network.
+
+For the election of the drone we firstly considered the "Bracha-Toueg fail consensus algorithm", then the "Echo with extinction", then we reached the conclusion that also the "Echo" would work. The "Bracha-Toueg" was discarded because it needs to know the size of the network (N), this means that the manager needs to calculate and distribute the size. The other problem was that the "Bracha-Toueg" needs a major modification which consists in making sure that the majority of the network converges to the minimum distance known by the network.
+
+The differences between the "Echo" and "Echo with extinction" are that: in the "Echo" the algorithm has a single initiator, that makes the last decision in the election, which needs to be broadcasted; while in the "Echo with extinction" the initial node is really a propagator of the request for all the nodes start a wave, so this initial node make the broadcast of the order and when the execution terminates the elected node knows that is elected.
+
+The message complexity for the "Echo" algorithm is $2M$ plus the propagation complexity of the decision $O(M)$ where $M$ is the number of edges in the network. So the total complexity is $ O(M) $.
+Instead the message complexity for the "Echo with extinction" is $O(M)$ for the initial broadcast and then $O(N M)$ for the algorithm.
+
+The decision is obvious: the "Echo" is the better choice.
+
+Note: the criterion used for the decision of the node is based on distances instead of IDs, the IDs are used only in case of conflict due to same distance.
+
 
 \section{Test cases}
 
