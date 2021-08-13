@@ -217,8 +217,8 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
 
 assignDroneToOrder(OrderTable, Key, DroneID) ->
 
-    {Source, Destination, Weight, _DefoultDroneID, Status} = ets:lookup(OrderTable, Key),
-    Result = ets:insert(OrderTable, {Key, {Source, Destination, Weight, DroneID, Status} } ), % overwrite
+    {Source, Destination, Weight, _DefoultDroneID, Time, Status} = ets:lookup(OrderTable, Key),
+    Result = ets:insert(OrderTable, {Key, {Source, Destination, Weight, DroneID, Time, Status} } ), % overwrite
     if
         Result == false ->
             io:format("Error failed attempt to modify the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, DroneID} }])
@@ -226,8 +226,8 @@ assignDroneToOrder(OrderTable, Key, DroneID) ->
 .
 
 updateTableStatus(Table, Key, NewStatus) ->
-    {Source, Destination, Weight, DroneID, _Status} = ets:lookup(Table, Key),
-    Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, NewStatus} } ), % overwrite
+    {Source, Destination, Weight, DroneID, Time, _Status} = ets:lookup(Table, Key),
+    Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, Time, NewStatus} } ), % overwrite
     if
         Result == false ->
             io:format("Error failed attempt to modify the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
