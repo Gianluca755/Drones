@@ -44,7 +44,7 @@ nonInitElection(DroneAddr, DronePosition, Neighbours) ->
 .
 
 
-
+    
 
 sendToAll(Msg, Addresses) ->
     case Addresses of

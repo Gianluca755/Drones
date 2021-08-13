@@ -230,42 +230,51 @@ The delivery order from the client can be in one of the following status:
 \begin{itemize}
 \item \textbf{inProgress}: an order is in this state after the order message has been reliably store by the manager;
 \item \textbf{inDelivery}: an order is in this state after the information about the elected drone has been reliably store by the manager;
-\item \textbf{delivered}: an order is in this state after the package has been delivered to it's destination and the manager server receives the "delivered" message form the drone;
+\item \textbf{delivered}: an order is in this state after the package has been delivered to it's destination and the manager server receives the "delivered" message form the drone.
 \end{itemize}
 
+
+\newpage
 \subsection{Messages: formats and effects}
 
 From client to broker
 \begin{itemize}
-	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{\{Source, Destination\}, Weight\}\}"
+	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}"
 	Source and Destination are referring to the location of the package, Weight is also referring to the package. The broker acknowledge it with "confirmedOrder" when the order has been reliably saved.
 
 	\item Query order: "\{queryOrder, ClientAddress, ClientID, OrderID\}". The broker replies with "orderNotPresent" if there is no order with the given OrderID and ClientID or with the status of the order.
 \end{itemize} \vspace{1em}
 From broker to manager
 \begin{itemize}
-	\item New order: "\{ Type, PidSource, ClientID, OrderID, Description \}"
+	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}"
+	This is the message received from a client, by the broker; the manager will reliably store it and it will reply with "\{inProgress, \{\}, ClientID, OrderID, \{\}\}".
 \end{itemize} \vspace{1em}
 From manager to broker
 \begin{itemize}
-	\item Update of an order:
+	\item Update of an order: "\{Type, \{\}, ClientID, OrderID, \{\} \}"
+	Where the type of the message is the status of the order, which can be inProgress, inDelivery, delivered. The broker will reliably store the new status without replying to the manager.
 \end{itemize}\vspace{1em}
 From manager to drones
 \begin{itemize}
-	\item New order:
+	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}"
+	This is always the original message, the random drone will start the election without notify the manager.
 \end{itemize} \vspace{1em}
 From drones to manager
 \begin{itemize}
-	\item Election result:
-	\item Package delivered:
+	\item Election result: "\{inDelivery, DroneAddress, ClientID, OrderID, \{\} \}"
+
+	\item Package delivered: "\{delivered, \{\}, ClientID, OrderID, \{\} \}"
+	The drone will send the message to the manager which will reliably store it. The manager will reply with a confirmation.
+
 	\item Registration:
 \end{itemize} \vspace{1em}
 From drones to drones
 \begin{itemize}
-	\item Echo election:
+	\item Echo election: "\{election, HandlerAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}"
 \end{itemize}
+\newpage
 
-\vspace{1em}
+
 UML sequence diagrams go here.
 \begin{figure}[h!]
 	\centering

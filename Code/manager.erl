@@ -80,15 +80,14 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
     receive
 
     % receive make order, save, reply to broker with inProgress, select random drone
-    { makeOrder, _, _, _, _, _ } = Msg ->
+    % receive inDelivery (means elected) from a drone, save info and new status, inform the broker
+    % receive delivered from a drone, save info and new status, inform the broker
+    { Type, _ClientAddress, _ClientID, _OrderID, _Description } = Msg
+    when Type == makeOrder ; Type == inDelivery ; Type == inProgress ->
         Handler = spawn( manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable] ),
         Handler ! Msg ;   % let the new handler apply the order
 
-    % receive inDelivery from a drone, save info and new status, inform the broker
-    % receive delivered from a drone, save info and new status, inform the broker
-    { Type, _PidDrone, _ClientID, _OrderID, _Description } = Msg when Type == inDelivery ; Type == inProgress ->
-        Handler = spawn(manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable]),
-        Handler ! Msg
+
 
     % Timeout is for the case where the server has no incoming messages for a long period of time,
     % it still has to respond to the ping but the 10 is for preventing aggressive looping of the process
@@ -163,7 +162,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             % send confirmation to the broker
             AddrRecord#addr.primaryBrokerAddr !
             {   inProgress,
-                AddrRecord#addr.primaryManagerAddr,
+                {},
                 ClientID,
                 OrderID,
                 {}  % empty description because it's already known by the broker
@@ -174,7 +173,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type),
                 AddrRecord#addr.primaryBrokerAddr !
                 {   Type,
-                    AddrRecord#addr.primaryManagerAddr,
+                    {},
                     ClientID,
                     OrderID,
                     {}  % empty description because it's already known by the broker

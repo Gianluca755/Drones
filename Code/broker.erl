@@ -81,7 +81,8 @@ loopPrimary(OrderTable, AddrRecord) ->
         respondQuery(Pid, OrderTable, ClientID, OrderID) ;
 
     % Handles all the cases of execution of the order
-    { Type, _, _, _, _, _ } = Msg when Type == makeOrder ; Type == inProgress ; Type == inDelivery ; Type == delivered ->
+    { Type, _ClientAddress, _ClientID, _OrderID, _Description } = Msg
+    when Type == makeOrder ; Type == inProgress ; Type == inDelivery ; Type == delivered ->
         Handler = spawn( broker, handlerOrderPrimary, [OrderTable, AddrRecord] ),
         Handler ! Msg   % let the new handler apply the order
 
@@ -128,11 +129,11 @@ handlerOrderPrimary(OrderTable, AddrRecord) ->
     receive {bindAdderess, PidBckHandler} -> true
     end,
     % process the msg and bind the variables
-    receive { Type, PidSource, ClientID, OrderID, Description } = Msg
+    receive { Type, ClientAddress, ClientID, OrderID, Description } = Msg
             when Type == makeOrder ; Type == inProgress ; Type == inDelivery ; Type == delivered -> true
     end,
 
-    PidBckHandler ! Msg, % send msg to broker bck
+    PidBckHandler ! Msg, % send msg to broker backup
     receive confirmedBck -> true
     end,
     % saving the status order
@@ -140,17 +141,18 @@ handlerOrderPrimary(OrderTable, AddrRecord) ->
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } ),
-            PidSource ! confirmedOrder , % send ack to the client
+            ClientAddress ! confirmedOrder , % send ack to the client
             AddrRecord#addr.primaryManagerAddr ! Msg  % send order to the manager
             ;
         true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
     end
 .
 
+
 handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
     PrimaryHandlerAddr ! {bindAdderess, self()},
 
-    receive { Type, _PidSource, ClientID, OrderID, Description }
+    receive { Type, _ClientAddress, ClientID, OrderID, Description }
             when Type == makeOrder ; Type == inProgress ; Type == inDelivery ; Type == delivered -> true
     end,
     if
