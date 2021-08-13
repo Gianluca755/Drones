@@ -143,21 +143,25 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
     if
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
-            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, 0, saved} } ),
+            ets:insert(OrderTable, {
+                {ClientID, OrderID},
+                {Source, Destination, Weight, 0, erlang:system_time(milli_seconds), saved} }
+            ),
+            % 0 is the default droneID, the time is the last time of the inspection by the manager
+
 
             % select random drone
             {DroneID, DroneAddr} = pick_rand(DroneTable),
-            DroneAddr ! Msg,
-            receive confirmedDrone -> true
-            % add case of failure
-            end,
 
-            PidBckHandler ! DroneID,
+            PidBckHandler ! DroneID, % send drone choice to the backup
             receive confirmedBck -> true
             end,
 
             % update table drone
             assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
+
+            DroneAddr ! Msg, % we assume the drone is alive, the manager will ping it after a certaint amount of time
+
 
             % send confirmation to the broker
             AddrRecord#addr.primaryBrokerAddr !

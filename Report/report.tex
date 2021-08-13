@@ -92,7 +92,7 @@ The differences between the "Echo" and "Echo with extinction" are that: in the "
 The message complexity for the "Echo" algorithm is $2M$ plus the propagation complexity of the decision $O(M)$ where $M$ is the number of edges in the network. So the total complexity is $ O(M) $.
 Instead the message complexity for the "Echo with extinction" is $O(M)$ for the initial broadcast and then $O(N M)$ for the algorithm.
 
-The decision is obvious: the "Echo" is the better choice.
+The decision is obvious: the "Echo" is the better choice in the worst case. The drawback is that the failure of a drone during an election will bock the election.
 
 Note: the criterion used for the decision of the node is based on distances instead of IDs, the IDs are used only in case of conflict due to same distance.
 
@@ -258,13 +258,15 @@ From manager to drones
 \begin{itemize}
 	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}"
 	This is always the original message, the random drone will start the election without notify the manager.
+
+	\item Drone status:
 \end{itemize} \vspace{1em}
 From drones to manager
 \begin{itemize}
 	\item Election result: "\{inDelivery, DroneAddress, ClientID, OrderID, \{\} \}"
 
 	\item Package delivered: "\{delivered, \{\}, ClientID, OrderID, \{\} \}"
-	The drone will send the message to the manager which will reliably store it. The manager will reply with a confirmation.
+	The drone will send the message to the manager which will reliably store it. The manager will reply with a confirmation, and will notify the broker.
 
 	\item Registration:
 \end{itemize} \vspace{1em}

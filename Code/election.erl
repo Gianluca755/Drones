@@ -1,5 +1,6 @@
 
 
+
 % receive msg with new order
 InitElection = spawn(drone, initElection, [self(), Neighbours])
 InitElectionElection ! Msg
@@ -9,7 +10,7 @@ initElection(DroneAddr, DronePosition, Neighbours) ->
     receive Order -> true
     end,
 
-    sendToAll(Order, Neighbours), % CHANGE ORDER
+    sendToAll(Order, Neighbours), % CHANGE THE ORDER INFO
     Results = receiveN(length(Neighbours), []),
 
     % choose the best between the initiator node and the neighbours
@@ -44,7 +45,7 @@ nonInitElection(DroneAddr, DronePosition, Neighbours) ->
 .
 
 
-    
+
 
 sendToAll(Msg, Addresses) ->
     case Addresses of
