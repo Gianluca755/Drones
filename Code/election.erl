@@ -17,15 +17,30 @@ initElection(DroneAddr, DronePosition, Neighbours) ->
     % if needed propagate decision
 
 
-    % if this node can't partecepate signal the loop process of the drone
+    % if this node can't partecepate due to low battery power, send a note the loop process of the drone
 
 .
 
 % non initiator receive msg flag parent, propagate msg then wait for all the replies,
 % choose the best option and send to parent, wait for decision to propagate.
 
-nonInitElection() ->
+nonInitElection(DroneAddr, DronePosition, Neighbours) ->
+    receive Wave ->
+    end,
 
+    Children = list:delete(Parent, Neighbours),
+
+    sendToAll(Wave, Children),
+    Results = receiveN(length(Children), []),
+
+    % make local decision
+
+    % push decision to parent
+
+    % wait for propagation of the election result
+
+
+    % if this node can't partecepate due to low battery power, send a note the loop process of the drone
 .
 
 
