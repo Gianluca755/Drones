@@ -274,9 +274,11 @@ From drones to manager
 	\item Package delivered: "\{delivered, DroneAddress, ClientID, OrderID, \{\} \}"
 	The drone will send the message to the manager which will reliably store it. The manager will reply with "confirmDelivered", and will notify the broker.
 
-	\item Registration:
+	\item Registration:  "\{joinRequest, DroneAddress, DroneID, \{MaxCarry\}, \{\} \}"
+	The drone will send the message to the manager to express it's interest in joining the network, the manager will respond with a list of drones for it to connect to.
 
-	\item Failure:
+	\item Failure:  "\{failureNotification, DroneAddress, DroneID, \{\} \}, \{\} \}"
+	The drone will send the message to the manager informing it of the drone failure.
 \end{itemize} \vspace{1em}
 From drones to drones
 \begin{itemize}
@@ -289,11 +291,13 @@ UML sequence diagrams go here.
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\linewidth]{New-drone}
+	\caption{UML diagram for the join of a new node }
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\linewidth]{New-order}
+	\caption{UML diagram for the execution of a delivery request}
 \end{figure}
 
 Also, put here a detailed description of distributed algorithms used to solve specific problems of the project.
