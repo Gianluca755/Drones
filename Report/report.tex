@@ -71,8 +71,7 @@ The key players in our implementation are:
 \end{itemize}
 
 
-\section{System features and algorithms}
-
+\section{System features}
 
 The system transparencies that we aim to implement are:
 \begin{itemize}
@@ -199,6 +198,11 @@ The following are the functional requirements required by the project:
 The following are the non-functional requirements required by the project:
 \begin{itemize}
 \item there is no limit on the minimum weight but the package can't weigh more than X;
+\item there are no restrictions on the movements of the drones;
+\item there are no restrictions on the source or destination of the delivery request;
+\item it is not required to pay attention to security or Byzantine behaviour the drones;
+
+\item the system must be able to recover from the failure of a drone or a server;
 \item it's important for following transparencies to be present:
 	\begin{itemize}
 	\item \textbf{concurrency}: only one drone will be selected to carry out the delivery of the package;
@@ -217,13 +221,23 @@ This chapter is devoted to the description of the general architectures, and spe
 \section{Logical architecture}
 Describe the components of your systems: modules/objects/components/services.
 For each component, describe the functionalities it implements, and by who is used.
-
+\subsection{Modules used in the implementation}
+The modules used in the implementation of the system are:
+\begin{itemize}
+\item \textbf{broker.erl}
+\item \textbf{client.erl}
+\item \textbf{drone.erl}
+\item \textbf{election.erl}
+\item \textbf{enviroment.erl}
+\item \textbf{manager.erl}
+\item \textbf{utils.erl}
+\end{itemize}
 \subsection{Primary backup schema}
 Since the broker and the manager servers are both single point of failure, it has been chosen to implement a backup for them. The schema used is the simplest: one primary and one backup.
 
 After some experiments it has been chosen to handle the messages received by the servers, (broker and manager) in the following way: the loop process exchange pings with its backup and when receives a message related to the orders of the clients it start a new Erlang process to handle the message. This new Erlang process contacts the backup server which create an other Erlang process. The two new processes synchronize the status of the order between the primary and backup server.
 
-This approach permits an efficient use of the resources since it prevents blocking, allows to handle a vast number of messages thanks to the lightweight Erlang processes. Moreover when a fail happened it will disrupt only a small step of the execution of an order, instead of the entire server.
+This approach permits an efficient use of the resources since it prevents blocking, allows to handle a vast number of messages thanks to the lightweight Erlang processes. Moreover when a fail happened it will disrupt only a small step of the execution of an order,instead of the entire server.
 
 
 \section{Protocols and algorithms}
@@ -361,9 +375,17 @@ Important choices about implementation should be described here; e.g., peculiar 
 The storage of data relative to orders in the broker server and, drones and order in the manager server is done through the "Erlang Term Storage" (ETS) for the development mode with the purpose of preventing SSD consumption. In production the function calls should be substituted with the "Disk Erlang Term Storage" (DETS), an other option which require small changes is to use the Mnesia: the database included in Erlang, or some other database. In the development mode we choose the AVL tree as the data structure used by ETS over the hash table, without particular justification.
 
 \chapter{Validation}
+%Check if requirements from Chapter~\ref{ch:analysis} have been fulfilled.
+%Quantitative tests (simulations) and screenshots of the interfaces are put here.
 
-Check if requirements from Chapter~\ref{ch:analysis} have been fulfilled.
-Quantitative tests (simulations) and screenshots of the interfaces are put here.
+The system is according to the transparencies declared in the section \ref{System features} 
+\begin{itemize}
+	\item \textbf{concurrency transparency}: the system must be able to handle multiple requests at the same time, this is done in such a way that every clients acts like if they were the only one making requests;
+	\item \textbf{failure transparency}:the system manages faults of the drones and the servers in a transparent way by switching to the backup servers or by selecting another drone to finish the delivery;
+	\item \textbf{location transparency}: the client only needs to be able to connect with the broker server to request the delivery and to query the status of the request, it does not need to know which drones handle the request;
+	\item \textbf{performance and scaling transparency}: the increase in the overall load on the network can be managed by increasing the number of drones in the network;
+	\item \textbf{reconfiguration transparency}: the structure of the network is not significantly impacted by the addition of a new drone.
+\end{itemize}
 
 
 \chapter{Conclusions}
