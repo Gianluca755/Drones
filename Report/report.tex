@@ -288,11 +288,39 @@ From drones to drones
 
 
 UML sequence diagrams go here.
+\textbf{Join of a new drone}
+
+The Join of a new drone in the network follows the following steps:
+\begin{enumerate}
+\item  The drone that wants to join the network sends a message to the management server indicating it's drone id and it's maximum carry weight;
+\item the management server responds with a list of drones;
+\item the drone sends a connect message to each drone in the list given by the management server;
+\item every drone contacted responds with an ack message,
+\item every time the new drone receives an ack message it will add that drone to it's neighbour list.
+\end{enumerate}
+
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\linewidth]{New-drone}
 	\caption{UML diagram for the join of a new node }
 \end{figure}
+
+
+\textbf{New delivery request}
+
+The execution of a new delivery request follows the following steps:
+\begin{enumerate}
+\item The client sends a message to the broker server with the delivery request;
+\item the broker server delivers the request to the manager server, the broker also sends back an ack message to the client to inform it that it received the request,;
+\item once the manager server receives the request, it selects a random drone and delivers the request to it, it also sends back a message to the broker server to update the status of the delivery;
+\item the drone initiates the election procedure and exchanges the necessary messages with other drones;
+\item once a drone has been selected to carry out the delivery it sends a message to the manager server informing it of the result of the election;
+\item the manager server relays this information to the broker server updating the status of the delivery;
+\item the selected drone carries out the delivery and once id deposits the package at the destination it sends a message to the manager server updating the status of the delivery;
+\item the broker server responds with an ack and sends a message to the broker server updating the status of the delivery
+\item at any point the client can send a message to the broker server ith a query for the status of it's delivery;
+\item the broker server responds with a message containing the status of the request.
+\end{enumerate}
 
 \begin{figure}[h!]
 	\centering
@@ -303,7 +331,9 @@ UML sequence diagrams go here.
 Also, put here a detailed description of distributed algorithms used to solve specific problems of the project.
 
 \section{Physical architecture and deployment}
-Which nodes and platforms involved, and where each component is deployed.
+%Which nodes and platforms involved, and where each component is deployed.
+ There are no specific requirements for the physical architecture, the drones can be deployed in any point of the map and the clients can request deliveries form and to any point in the map ,the introduction of the broker and management servers for the network and order management enables the drones to be used only for the delivery of packages.
+
 
 \section{Development plan}
 The base functionalities that the system must offer are:
