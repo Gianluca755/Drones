@@ -21,7 +21,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList) ->
 		{dronesList, Manager_Server_Addr, DronesList} ->
 			connect_to_drones(DronesList, DroneID);
 		{connection, DroneAddr, NeighbourDroneID} ->
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ NeighbourDroneID);
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ {DroneAddr, NeighbourDroneID});
 		{droneStatus, Manager_Server_Addr} ->
 			Manager_Server_Addr ! {droneStatus, self(), DroneID}
 	end,
@@ -29,18 +29,14 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList) ->
 .
 
 join_Request(Manager_Server_Addr, DroneID) ->
-	Manager_Server_Addr ! {joinRequest, self(), DroneID, {rand:uniform(1500)},{}}
+	Manager_Server_Addr ! {joinRequest, self(), DroneID, {}, {rand:uniform(1500)}}
 .
-
-
 
 	%Manager_Server_Addr ! {inDelivery, self(), ClientID, OrderID, {}},
 	%Manager_Server_Addr ! {delivered, {}, ClientID, OrderID, {}}
 
 
 	%Drone_Addr ! {election, self(), ClientID, OrderID, {Source, Destination, Weight}}
-
-
 
 connect_to_drones(DronesList, DroneID)->
 	

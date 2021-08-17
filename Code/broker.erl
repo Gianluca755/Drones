@@ -168,7 +168,7 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
 
 respondQuery(Pid, OrderTable, ClientID, OrderID) ->
     case ets:lookup(OrderTable, {ClientID, OrderID}) of
-        false -> Pid ! orderNotPresent
+        false -> Pid ! orderNotPresent;
         {_, _, _, Status} -> Pid ! Status
     end
 .
