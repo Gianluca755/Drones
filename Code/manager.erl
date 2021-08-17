@@ -236,7 +236,7 @@ updateTableStatus(Table, Key, NewStatus) ->
 
 
 
-% returns an element
+% returns an element of the table (for drone selection in join and election)
 pick_rand(Table) ->
     Size = ets:info(Table, size),
     Rand = rand:uniform(Size),
@@ -246,14 +246,16 @@ pick_rand(Table) ->
 pick_rand(Table, N) ->
     if
         N == 1 -> ets:lookup( Table, ets:first(Table) ) ;
-        true   -> First = ets:first(Table), pick_rand(Table, First, N-1)
+        true   -> First = ets:first(Table),
+                  pick_rand(Table, First, N-1)
     end
 .
 
 pick_rand(Table, Key, N) ->
     if
         N == 0 -> ets:lookup(Table, Key);
-        N > 0  -> X = ets:next(Table, Key), pick_rand(Table, X, N-1)
+        N > 0  -> X = ets:next(Table, Key),
+                      pick_rand(Table, X, N-1)
     end
 .
 

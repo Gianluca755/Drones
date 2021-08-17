@@ -232,10 +232,12 @@ The modules used in the implementation of the system are:
 \item \textbf{manager.erl}
 \item \textbf{utils.erl}
 \end{itemize}
+
+
 \subsection{Primary backup schema}
 Since the broker and the manager servers are both single point of failure, it has been chosen to implement a backup for them. The schema used is the simplest: one primary and one backup.
 
-After some experiments it has been chosen to handle the messages received by the servers, (broker and manager) in the following way: the loop process exchange pings with its backup and when receives a message related to the orders of the clients it start a new Erlang process to handle the message. This new Erlang process contacts the backup server which create an other Erlang process. The two new processes synchronize the status of the order between the primary and backup server.
+After some experiments it has been chosen to handle the messages received by the servers, (broker and manager) in the following way: the backup server keeps pinging the primary. When the acting primary receives a message related to the orders of the clients it start a new Erlang process to handle the message. This new Erlang process contacts the backup server which create an other Erlang process. The two new processes synchronize the status of the order between the primary and backup server.
 
 This approach permits an efficient use of the resources since it prevents blocking, allows to handle a vast number of messages thanks to the lightweight Erlang processes. Moreover when a fail happened it will disrupt only a small step of the execution of an order,instead of the entire server.
 
@@ -345,21 +347,21 @@ Also, put here a detailed description of distributed algorithms used to solve sp
 
 \section{Physical architecture and deployment}
 %Which nodes and platforms involved, and where each component is deployed.
- There are no specific requirements for the physical architecture, the drones can be deployed in any point of the map and the clients can request deliveries form and to any point in the map ,the introduction of the broker and management servers for the network and order management enables the drones to be used only for the delivery of packages.
+There are no specific requirements for the physical architecture, the drones can be deployed in any point of the map and the clients can request deliveries form and to any point in the map ,the introduction of the broker and management servers for the network and order management enables the drones to be used only for the delivery of packages.
 
 
 \section{Development plan}
-The base functionalities that the system must offer are:
+The basic (tier 1) functionalities that the system must offer are:
 \begin{itemize}
-\item a client can make a delivery request;
-\item communication between the drones an with the management server for the drone election;
-\item selection of a new drone to complete a delivery if the current one crashes;
-\item addition of more drones.
+\item support for a dynamic number of clients and each one can make multiple delivery requests and query the broker for the status of the order;
+\item broker and manager handle the orders and have a replica backup;
+\item the fleet is made by a dynamic number of drones, they may fail; the drones carry the packages.
 \end{itemize}
-The optional functionalities are:
+
+The extended (tier 2) functionalities are:
 \begin{itemize}
-\item consider the weight of the package in the selection of the drone;
-\item a method for the client to request the status of the delivery;
+\item support for failover and takeover of the servers;
+\item instead of executing the various parts of the system on the same Erlang Machine, use containers to separate the various components of the system.
 \end{itemize}
 
 %Since it is difficult to predict just how hard implementing a new system will be, you should formulate as a set of ``tiers,'' where the basic tier is something you’re sure you can complete, and the additional tiers add more features, at both the application and the system level.
