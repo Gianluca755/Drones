@@ -252,7 +252,6 @@ The delivery order from the client can be in one of the following status:
 \end{itemize}
 
 
-\newpage
 \subsection{Messages: formats and effects}
 
 From client to broker
@@ -306,11 +305,11 @@ UML sequence diagrams go here.
 
 The Join of a new drone in the network follows the following steps:
 \begin{enumerate}
-\item  The drone that wants to join the network sends a message to the management server indicating it's drone id and it's maximum carry weight;
+\item  The drone that wants to join the network sends a message to the management server indicating its drone id and its maximum carry weight;
 \item the management server responds with a list of drones;
 \item the drone sends a connect message to each drone in the list given by the management server;
 \item every drone contacted responds with an ack message,
-\item every time the new drone receives an ack message it will add that drone to it's neighbour list.
+\item every time the new drone receives an ack message it will add that drone to its neighbour list.
 \end{enumerate}
 
 \begin{figure}[h!]
@@ -325,14 +324,14 @@ The Join of a new drone in the network follows the following steps:
 The execution of a new delivery request follows the following steps:
 \begin{enumerate}
 \item The client sends a message to the broker server with the delivery request;
-\item the broker server delivers the request to the manager server, the broker also sends back an ack message to the client to inform it that it received the request,;
-\item once the manager server receives the request, it selects a random drone and delivers the request to it, it also sends back a message to the broker server to update the status of the delivery;
-\item the drone initiates the election procedure and exchanges the necessary messages with other drones;
+\item the broker server saves the order, then it sends back an ack message to the client, finally it delivers the request to the manager server;
+\item once the manager server receives the request, it stores the order then replies to the broker server with the message "inProgress" which is equivalent to an ack, then it selects a random drone and delivers the request to it;
+\item the chosen drone initiates the election procedure and exchanges the necessary messages with other drones;
 \item once a drone has been selected to carry out the delivery it sends a message to the manager server informing it of the result of the election;
-\item the manager server relays this information to the broker server updating the status of the delivery;
-\item the selected drone carries out the delivery and once id deposits the package at the destination it sends a message to the manager server updating the status of the delivery;
-\item the broker server responds with an ack and sends a message to the broker server updating the status of the delivery
-\item at any point the client can send a message to the broker server ith a query for the status of it's delivery;
+\item the manager server notifies the broker server of the new status of the delivery;
+\item the selected drone carries out the delivery and once it deposits the package at the destination it sends a message to the manager server updating the status of the delivery;
+\item the manager server saves the new status of the delivery, responds with an ack to the drone and sends a message to the broker server updating the status of the delivery;
+\item at any point the client can send a message to the broker server with a query for the status of its delivery;
 \item the broker server responds with a message containing the status of the request.
 \end{enumerate}
 
@@ -378,7 +377,7 @@ The storage of data relative to orders in the broker server and, drones and orde
 %Check if requirements from Chapter~\ref{ch:analysis} have been fulfilled.
 %Quantitative tests (simulations) and screenshots of the interfaces are put here.
 
-The system is according to the transparencies declared in the section \ref{System features} 
+The system is according to the transparencies declared in the section \ref{System features}
 \begin{itemize}
 	\item \textbf{concurrency transparency}: the system must be able to handle multiple requests at the same time, this is done in such a way that every clients acts like if they were the only one making requests;
 	\item \textbf{failure transparency}:the system manages faults of the drones and the servers in a transparent way by switching to the backup servers or by selecting another drone to finish the delivery;

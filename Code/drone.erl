@@ -11,12 +11,12 @@
 
 
 drone_Loop_init(Manager_Server_Addr, DroneID, NeighbourList)->
-	join_Request(Manager_Server_Addr,DroneID),
+	join_Request(Manager_Server_Addr, DroneID),
 	drone_Loop(Manager_Server_Addr, DroneID, NeighbourList)
 .
 
 drone_Loop(Manager_Server_Addr, DroneID, NeighbourList) ->
-	
+
 	receive
 		{dronesList, Manager_Server_Addr, DronesList} ->
 			connect_to_drones(DronesList, DroneID);
@@ -43,9 +43,9 @@ join_Request(Manager_Server_Addr, DroneID) ->
 
 
 connect_to_drones(DronesList, DroneID)->
-	
+
 	if
-		length(DronesList) >0 ->
+		length(DronesList) > 0 ->
 			hd(DronesList) ! {connection, self(), DroneID},
 			connect_to_drones(tl(DronesList), DroneID)
 	end
