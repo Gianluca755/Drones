@@ -80,9 +80,17 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
     receive
 	
 	{joinRequest, Drone_Address, DroneID, {}, weight}->	
-		DronesList= spawn(manager, create_drone_list, [DroneTable, [], 3]),
-		ets:insert (DroneTable, {Drone_Address, DroneID}),
-		Drone_Address ! {dronesList, self(), DronesList};
+		Size = ets:info(DroneTable, size),
+		case Size of
+			0 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 0, Drone_Address]);
+			1 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 1, Drone_Address]);
+			2 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 2, Drone_Address]);
+			true -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 3, Drone_Address])
+		end,
+		ets:insert (DroneTable, {Drone_Address, DroneID});
+		
+		
+		
 	
     % receive make order, save, reply to broker with inProgress, select random drone
     % receive inDelivery (means elected) from a drone, save info and new status, inform the broker
@@ -261,7 +269,7 @@ pick_rand(Table, Key, N) ->
     end
 .
 
-create_drone_list(DroneTable, List, Counter)->
+create_drone_list(DroneTable, List, Counter, Drone_Address)->
 	
 	if
 		(counter > 0) ->
@@ -269,10 +277,11 @@ create_drone_list(DroneTable, List, Counter)->
 			In=lists:member(New_drone, List),
 			if (not In) ->
 				List ++ New_drone,
-				create_drone_list(DroneTable, List, Counter)
+				create_drone_list(DroneTable, List, Counter, Drone_Address)
 			end,
-			create_drone_list(DroneTable, List, Counter - 1)
-	end
+			create_drone_list(DroneTable, List, Counter - 1, Drone_Address)
+	end,
+	Drone_Address ! {dronesList, self(), List}
 .
 
 
