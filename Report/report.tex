@@ -146,7 +146,7 @@ The schedule for how you plan to carry our your design and implementation is as 
 
 The following are the functional requirements required by the project:
 \begin{itemize}
-\item \textbf{request for a delivery}: a client can request the delivery of a package form point A to point B.
+\item \textbf{make a delivery request}: a client can request the delivery of a package form point A to point B.
 
 	\textbf{Input}: the package starting position, the destination and the weight of the package;
 
@@ -162,7 +162,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: letting the client know about the status of the delivery.
 
-%\item \textbf{election of a drone for the delivery}: the network of drones elects the most suitable drone to carry out the delivery, the input is the position, carry weight and battery of each drone, there is no output, the effect is to elect the drone that will make the delivery;
+
 \item \textbf{message after crash while idle}: a drone that crashes while idle can request to be taken to a repair station,
 
 	\textbf{Input}: the broken drone position;
@@ -179,7 +179,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: the effect is the election of a drone that will move it to a repair station and the election of another drone to carry out the delivery.
 
-\item \textbf{a new drones to joins the network}:a new drone that wants to join the network sends a message to the management server.
+\item \textbf{a new drone joins the network}:a new drone that wants to join the network sends a message to the management server.
 
 	\textbf{Input}: the new drone unique id if he has one, its carry weight and it's position;
 
@@ -200,7 +200,7 @@ The following are the non-functional requirements required by the project:
 \item there is no limit on the minimum weight but the package can't weigh more than X;
 \item there are no restrictions on the movements of the drones;
 \item there are no restrictions on the source or destination of the delivery request;
-\item it is not required to pay attention to security or Byzantine behaviour the drones;
+\item it is not required to consider security problems or Byzantine behaviour the drones;
 
 \item the system must be able to recover from the failure of a drone or a server;
 \item it's important for following transparencies to be present:
@@ -215,22 +215,21 @@ The following are the non-functional requirements required by the project:
 
 
 \chapter{Project}
-
-This chapter is devoted to the description of the general architectures, and specific algorithms.
+In this chapter we'll describe the logical architecture of our system, the structure of the messages exchanged in our system, the algorithms used and we'll explain in detail the most important functions of our system.
+%This chapter is devoted to the description of the general architectures, and specific algorithms.
 
 \section{Logical architecture}
-Describe the components of your systems: modules/objects/components/services.
-For each component, describe the functionalities it implements, and by who is used.
+%Describe the components of your systems: modules/objects/components/services. For each component, describe the functionalities it implements, and by who is used.
 \subsection{Modules used in the implementation}
-The modules used in the implementation of the system are:
+The Erlang modules used in the implementation of the system are:
 \begin{itemize}
-\item \textbf{broker.erl}
-\item \textbf{client.erl}
-\item \textbf{drone.erl}
-\item \textbf{election.erl}
-\item \textbf{enviroment.erl}
-\item \textbf{manager.erl}
-\item \textbf{utils.erl}
+\item \textbf{broker.erl}: this module contains all the functions needed by the broker server to handle the delivery requests and to communicate them to the management server and to handle the query requests from the clients;
+\item \textbf{client.erl}: this module contains all the functions needed by the client to make a delivery request and to query the status of its delivery;
+\item \textbf{drone.erl}: this module contains all the functions needed by the drone to exchange messages with other drones for the election and with the management server to start the election and to update the status of the delivery;
+\item \textbf{election.erl}: this module contains all the functions needed to elect a drone for the delivery and to exchange messages with the drones to achieve this goal;
+\item \textbf{enviroment.erl}: the role of this module is to set up the broker and the manager servers and to spawn the clients and the drones;
+\item \textbf{manager.erl}: this module contains all the functions needed by the manager server to handle the join of a new drone, to start the election procedure and to update the relative drone table and order status;
+\item \textbf{utils.erl}: this module contains some functions that are useful for multiple other modules.
 \end{itemize}
 \subsection{Primary backup schema}
 Since the broker and the manager servers are both single point of failure, it has been chosen to implement a backup for them. The schema used is the simplest: one primary and one backup.
@@ -241,7 +240,8 @@ This approach permits an efficient use of the resources since it prevents blocki
 
 
 \section{Protocols and algorithms}
-Communication between components.
+%Communication between components.
+
 
 \subsection{Status of the order}
 The delivery order from the client can be in one of the following status:
@@ -346,7 +346,7 @@ Also, put here a detailed description of distributed algorithms used to solve sp
 
 \section{Physical architecture and deployment}
 %Which nodes and platforms involved, and where each component is deployed.
- There are no specific requirements for the physical architecture, the drones can be deployed in any point of the map and the clients can request deliveries form and to any point in the map ,the introduction of the broker and management servers for the network and order management enables the drones to be used only for the delivery of packages.
+ There are no specific requirements for the physical architecture, the drones can be deployed in any point of the map and the clients can request deliveries form and to any point in the map, the introduction of the broker and management servers for the network and order management enables the drones to be used only for the delivery of packages.
 
 
 \section{Development plan}
@@ -359,6 +359,7 @@ The base functionalities that the system must offer are:
 \end{itemize}
 The optional functionalities are:
 \begin{itemize}
+\item transportation of a broken drone to a repairing station;
 \item consider the weight of the package in the selection of the drone;
 \item a method for the client to request the status of the delivery;
 \end{itemize}
@@ -367,7 +368,7 @@ The optional functionalities are:
 
 \chapter{Implementation}
 
-Details about the implementation: every choice about platforms, languages, software/hardware, middlewares, which has not been decided in the requirements.
+Details about the implementation: every choice about platforms, languages, software/hardware, middleware, which has not been decided in the requirements.
 
 
 Important choices about implementation should be described here; e.g., peculiar data structures.
@@ -382,9 +383,9 @@ The system is according to the transparencies declared in the section \ref{Syste
 \begin{itemize}
 	\item \textbf{concurrency transparency}: the system must be able to handle multiple requests at the same time, this is done in such a way that every clients acts like if they were the only one making requests;
 	\item \textbf{failure transparency}:the system manages faults of the drones and the servers in a transparent way by switching to the backup servers or by selecting another drone to finish the delivery;
-	\item \textbf{location transparency}: the client only needs to be able to connect with the broker server to request the delivery and to query the status of the request, it does not need to know which drones handle the request;
-	\item \textbf{performance and scaling transparency}: the increase in the overall load on the network can be managed by increasing the number of drones in the network;
-	\item \textbf{reconfiguration transparency}: the structure of the network is not significantly impacted by the addition of a new drone.
+	\item \textbf{location transparency}: the client only needs to be able to connect with the broker server to request the delivery and to query the status of the request, it does not need to know which drones handle the request, their position or address or the physical position of the servers;
+	\item \textbf{performance and scaling transparency}: the increase in the overall load on the network can be managed by increasing the number of drones in the network, the overhead of adding a new drone to the network is negligible. There is only one broker and one management server for the network and they can become bottlenecks;
+	\item \textbf{reconfiguration transparency}: the structure of the network is not significantly impacted by the addition of a new drone, when a node crashes the network reconfigures itself in a transparent way for the client.
 \end{itemize}
 
 
