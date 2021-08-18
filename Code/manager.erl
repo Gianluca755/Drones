@@ -74,20 +74,32 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
         {Sender, ping} when Sender == AddrRecord#addr.bckManagerAddr ->
             AddrRecord#addr.bckManagerAddr ! {self(), pingResponse}
     after
-        0 -> true
+       0 -> true
     end,
 
     receive
-
+	
+	{joinRequest, Drone_Address, DroneID, {}, weight}->	
+		Size = ets:info(DroneTable, size),
+		case Size of
+			0 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 0, Drone_Address]);
+			1 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 1, Drone_Address]);
+			2 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 2, Drone_Address]);
+			true -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 3, Drone_Address])
+		end,
+		ets:insert (DroneTable, {Drone_Address, DroneID});
+		
+		
+		
+	
     % receive make order, save, reply to broker with inProgress, select random drone
     % receive inDelivery (means elected) from a drone, save info and new status, inform the broker
     % receive delivered from a drone, save info and new status, inform the broker
     { Type, _Client_or_Drone_Address, _ClientID, _OrderID, _Description } = Msg
     when Type == makeOrder ; Type == inDelivery ; Type == inProgress ->
         Handler = spawn( manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable] ),
-        Handler ! Msg ;   % let the new handler apply the order
-
-
+        Handler ! Msg    % let the new handler apply the order
+	
 
     % Timeout is for the case where the server has no incoming messages for a long period of time,
     % it still has to respond to the ping but the 10 is for preventing aggressive looping of the process
@@ -257,6 +269,21 @@ pick_rand(Table, Key, N) ->
         N > 0  -> X = ets:next(Table, Key),
                       pick_rand(Table, X, N-1)
     end
+.
+
+create_drone_list(DroneTable, List, Counter, Drone_Address)->
+	
+	if
+		(counter > 0) ->
+			New_drone = pick_rand(DroneTable),
+			In=lists:member(New_drone, List),
+			if (not In) ->
+				List ++ New_drone,
+				create_drone_list(DroneTable, List, Counter, Drone_Address)
+			end,
+			create_drone_list(DroneTable, List, Counter - 1, Drone_Address)
+	end,
+	Drone_Address ! {dronesList, self(), List}
 .
 
 
