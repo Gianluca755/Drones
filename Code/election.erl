@@ -21,6 +21,12 @@ initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Nei
     sendToAll(NewOrder, Neighbours),
 
     Results = receiveN(length(Neighbours), []),
+
+    if % case where the await of the response took too much time
+        Results == 'EXIT' -> exit();
+        true -> true
+    end,
+
     SelectedResults = list:filter(checkResult, Results),  % select only the result messages
 
     Candidates = list:map(extractID_Addr_Distance, SelectedResults),
@@ -64,7 +70,7 @@ initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Nei
     if
         ElectedDroneID == -1 -> DroneAddr ! {excessiveWeight, ClientID, OrderID} ;
         true -> % in case of direct connection otherwise propagate in simil broadcast
-                ElectedPid ! {elected, ClientID, OrderID }
+                ElectedPid ! {elected, ClientID, OrderID, Source, Destination }
     end
 
 .
@@ -84,6 +90,11 @@ nonInitElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, 
     Wave2 = {{ election, self(), ClientID, OrderID, {Source, Destination, Weight} }},
     sendToAll(Wave2, Children),
     Results = receiveN(length(Children), []),
+
+    if % case where the await of the response took too much time
+        Results == 'EXIT' -> exit();
+        true -> true
+    end,
 
     SelectedResults = list:filter(checkResult, Results),  % select only the result messages
 
@@ -123,9 +134,13 @@ nonInitElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, 
     {ElectedDroneID, ElectedPid, ElectedDistance} = DecidedDrone,
 
     % push decision to parent
-    Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance}
+    Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance},
 
-    % the decision will be communicated with direct connection, otherwise a receive needs to be inserted here
+    % the election decision will be communicated with direct connection, otherwise a backpropagation needs to be inserted here
+
+    receive {elected, ClientID, OrderID, Source, Destination } = MsgElection -> DroneAddr ! MsgElection % let the drone handle it
+    after (3 * 60 * 1000) -> true % exit after 3m
+    end
 .
 
 
@@ -141,6 +156,7 @@ receiveN(N, Received) ->
     if
         N == 0 -> Received;
         N > 0  -> receive Msg -> receiveN(N-1, [Msg | Received])
+                  after (3 * 60 * 1000) -> 'EXIT'
                   end
     end
 .

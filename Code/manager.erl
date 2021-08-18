@@ -4,7 +4,7 @@
 
 
 -export([startPrimary/2, loopPrimary/3, startBck/3, loopBackup/4]).
--export([handlerOrderPrimary/3, handlerOrderBck/4]).
+-export([handlerOrderPrimary/3, handlerOrderBck/4, handlerJoinNetworkPrimary/2, handlerJoinNetworkBck/3]).
 -export([pick_rand/1, pick_rand/2, pick_rand/3 ]).
 
 
@@ -78,20 +78,14 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
     end,
 
     receive
-	
-	{joinRequest, Drone_Address, DroneID, {}, weight}->	
-		Size = ets:info(DroneTable, size),
-		case Size of
-			0 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 0, Drone_Address]);
-			1 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 1, Drone_Address]);
-			2 -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 2, Drone_Address]);
-			true -> DronesList= spawn(manager, create_drone_list, [DroneTable, [], 3, Drone_Address])
-		end,
-		ets:insert (DroneTable, {Drone_Address, DroneID});
-		
-		
-		
-	
+
+    % DroneTable has key: DroneID, value: DroneAddr, supported weight
+
+	{joinRequest, _Drone_Address, _DroneID, {}, _Weight} = Msg ->
+	    Handler = spawn(manager, handlerJoinNetworkPrimary, [AddrRecord, DroneTable]),
+        Handler ! Msg ;
+
+
     % receive make order, save, reply to broker with inProgress, select random drone
     % receive inDelivery (means elected) from a drone, save info and new status, inform the broker
     % receive delivered from a drone, save info and new status, inform the broker
@@ -99,7 +93,7 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
     when Type == makeOrder ; Type == inDelivery ; Type == inProgress ->
         Handler = spawn( manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable] ),
         Handler ! Msg    % let the new handler apply the order
-	
+
 
     % Timeout is for the case where the server has no incoming messages for a long period of time,
     % it still has to respond to the ping but the 10 is for preventing aggressive looping of the process
@@ -125,7 +119,8 @@ loopBackup(OrderTable, AddrRecord, DroneTable, LastPingTime) ->
                     loopBackup(OrderTable, AddrRecord, DroneTable, CurrentPingTime);
 
                 %% other cases
-                {newHandler, Pid} -> spawn(manager, handlerOrderBck, [OrderTable, AddrRecord, DroneTable, Pid])
+                {newHandler, Pid} -> spawn(manager, handlerOrderBck, [OrderTable, AddrRecord, DroneTable, Pid]);
+                {newHandlerJoinNetwork, Pid} -> spawn(manager, handlerJoinNetworkBck, [AddrRecord, DroneTable, Pid])
 
             end;
 
@@ -203,7 +198,7 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
     PrimaryHandlerAddr ! {bindAdderess, self()},
 
     % process the msg and bind the variables
-    receive { Type, PidClient, ClientID, OrderID, Description }
+    receive { Type, _PidClient, ClientID, OrderID, Description }
             when Type == makeOrder ; Type == inDelivery ; Type == delivered -> true
     end,
 
@@ -224,6 +219,44 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
     end
 .
 
+
+% reliably reply with the neighbours drones and save the info
+handlerJoinNetworkPrimary(AddrRecord, DroneTable) ->
+
+    AddrRecord#addr.bckManagerAddr ! {newHandlerJoinNetwork, self()},
+
+    % wait for handler of the backup
+    receive {bindAdderess, PidBckHandler} -> true
+    end,
+
+    receive {joinRequest, Drone_Address, DroneID, _, Weight} -> true
+    end,
+
+    PidBckHandler ! {joinRequest, Drone_Address, DroneID, self(), Weight},
+
+    receive confirmedBck -> true
+    end,
+
+    % store it
+    ets:insert( DroneTable, {DroneID, Drone_Address, Weight} ),
+
+    List = create_drone_list(DroneTable),
+
+    Drone_Address ! List
+.
+
+handlerJoinNetworkBck(AddrRecord, DroneTable, PrimaryHandlerAddr) ->
+
+    PrimaryHandlerAddr ! {bindAdderess, self()}, % meet the primary
+
+    receive {joinRequest, Drone_Address, DroneID, PrimaryHandlerAddr, Weight} -> true
+    end,
+
+    % store it
+    ets:insert( DroneTable, {DroneID, Drone_Address, Weight} ),
+
+    PrimaryHandlerAddr ! confirmedBck  % send confirmation
+.
 
 %%% utils %%%
 
@@ -266,24 +299,39 @@ pick_rand(Table, N) ->
 pick_rand(Table, Key, N) ->
     if
         N == 0 -> ets:lookup(Table, Key);
-        N > 0  -> X = ets:next(Table, Key),
+        N  > 0 -> X = ets:next(Table, Key),
                       pick_rand(Table, X, N-1)
     end
 .
 
-create_drone_list(DroneTable, List, Counter, Drone_Address)->
-	
+
+% return the list that has to be send to the new drone
+create_drone_list(DroneTable) ->
+    Size = ets:info(DroneTable, size),
+	List = case Size of
+		      0 -> [] ;
+		      1 -> ets:first(DroneTable);
+		      2 -> First = ets:first(DroneTable), Second = ets:next(DroneTable, First), [First, Second];
+		      3 -> First = ets:first(DroneTable), Second = ets:next(DroneTable, First),
+		           Third = ets:next(DroneTable, Second), [First, Second, Third];
+
+		      _Other -> create_drone_list_aux(DroneTable, [], Size)
+		   end,
+	List
+.
+
+create_drone_list_aux(DroneTable, List, Counter)->
 	if
-		(counter > 0) ->
+	    Counter == 0 -> List ;
+		Counter  > 0 ->
 			New_drone = pick_rand(DroneTable),
-			In=lists:member(New_drone, List),
-			if (not In) ->
-				List ++ New_drone,
-				create_drone_list(DroneTable, List, Counter, Drone_Address)
-			end,
-			create_drone_list(DroneTable, List, Counter - 1, Drone_Address)
-	end,
-	Drone_Address ! {dronesList, self(), List}
+			IsMember = lists:member(New_drone, List),
+
+			if
+			    (not IsMember) -> create_drone_list_aux(DroneTable, [New_drone | List] , Counter-1);
+			    IsMember       -> create_drone_list_aux(DroneTable, List, Counter)
+			end
+	end
 .
 
 

@@ -97,6 +97,8 @@ The decision is obvious: the "Echo" is the better choice in the worst case. The 
 
 The "Echo" algorithm has been chosen due to the lower message complexity, that's because a comparison of the performance of the two algorithm over multiple election, in real cases, over a realistic network topology, is outside the scope of this project.
 
+Simplification: under the assumption that the drones can reach each other, the communication of the decision of the election algorithm is made by a single message from the initiator node to the elected node.
+
 Note: the criterion used for the decision of the node is based on distances instead of IDs, the IDs are used only in case of conflict due to same distance.
 
 
@@ -297,9 +299,14 @@ From drones to manager
 \end{itemize} \vspace{1em}
 From drones to drones
 \begin{itemize}
-	\item Echo election: "\{election, HandlerAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}"
+	\item Echo election propagation: "\{election, HandlerAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}"
+	This message is sent in the first phase of the election.
 
-	\item "{result, ElectedDroneID, ElectedPid, Distance, {ClientID, OrderID} }"
+	\item Echo election back-propagation: "\{result, ElectedDroneID, ElectedPid, Distance, \{ClientID, OrderID\} \}"
+	This message is sent in the second phase of the election to the designed parent.
+
+	\item Echo election notification: "\{elected, ClientID, OrderID, Source, Destination \}"
+	This message is sent from the initiator to the elected node to inform it of the result.
 \end{itemize}
 \newpage
 
@@ -310,7 +317,7 @@ UML sequence diagrams go here.
 The Join of a new drone in the network follows the following steps:
 \begin{enumerate}
 \item  The drone that wants to join the network sends a message to the management server indicating its drone id and its maximum carry weight;
-\item the management server responds with a list of drones;
+\item the management server saves the characteristics of the drone and responds with a list of drones;
 \item the drone sends a connect message to each drone in the list given by the management server;
 \item every drone contacted responds with an ack message,
 \item every time the new drone receives an ack message it will add that drone to its neighbour list.
