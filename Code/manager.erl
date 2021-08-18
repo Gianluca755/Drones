@@ -154,7 +154,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
                 {ClientID, OrderID},
                 {Source, Destination, Weight, 0, erlang:system_time(milli_seconds), saved} }
             ),
-            % 0 is the default droneID, the time is the last time of the inspection by the manager
+            % 0 for empty droneID, the time is the last time of the inspection by the manager
 
 
             % select random drone
@@ -170,7 +170,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             DroneAddr ! Msg, % we assume the drone is alive, the manager will ping it after a certaint amount of time
 
 
-            % send confirmation to the broker
+            % send confirmation to the broker, it means that the order has been saved
             AddrRecord#addr.primaryBrokerAddr !
             {   inProgress,
                 {},

@@ -23,7 +23,7 @@ initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Nei
     Results = receiveN(length(Neighbours), []),
 
     if % case where the await of the response took too much time
-        Results == 'EXIT' -> exit();
+        Results == 'EXIT' -> DroneAddr ! electionFailed, exit();
         true -> true
     end,
 
@@ -92,7 +92,7 @@ nonInitElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, 
     Results = receiveN(length(Children), []),
 
     if % case where the await of the response took too much time
-        Results == 'EXIT' -> exit();
+        Results == 'EXIT' -> DroneAddr ! electionFailed, exit();
         true -> true
     end,
 

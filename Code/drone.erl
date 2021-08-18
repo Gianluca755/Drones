@@ -24,6 +24,8 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList) ->
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ {DroneAddr, NeighbourDroneID});
 		{droneStatus, Manager_Server_Addr} ->
 			Manager_Server_Addr ! {droneStatus, self(), DroneID}
+
+		% electionFailed ->  % check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 	end,
 	drone_Loop(Manager_Server_Addr, DroneID, NeighbourList)
 .
