@@ -42,7 +42,7 @@ connect_to_drones(DronesList, DroneID)->
 	
 	if
 		length(DronesList) >0 ->
-			hd(DronesList) ! {connection, self(), DroneID},
+			element(1, hd(DronesList)) ! {connection, self(), DroneID},
 			connect_to_drones(tl(DronesList), DroneID)
 	end
 .
