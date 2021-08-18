@@ -79,7 +79,7 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
 
     receive
 
-    % DroneTable has key: DroneID, value: DroneAddr, supported weight
+    % DroneTable has key: DroneID, value: DroneAddr
 
 	{joinRequest, _Drone_Address, _DroneID, {}, _Weight} = Msg ->
 	    Handler = spawn(manager, handlerJoinNetworkPrimary, [AddrRecord, DroneTable]),
@@ -229,7 +229,7 @@ handlerJoinNetworkPrimary(AddrRecord, DroneTable) ->
     receive {bindAdderess, PidBckHandler} -> true
     end,
 
-    receive {joinRequest, Drone_Address, DroneID, _, Weight} -> true
+    receive {joinRequest, Drone_Address, DroneID, _, _Weight} -> true
     end,
 
     PidBckHandler ! {joinRequest, Drone_Address, DroneID, self(), Weight},
@@ -238,7 +238,7 @@ handlerJoinNetworkPrimary(AddrRecord, DroneTable) ->
     end,
 
     % store it
-    ets:insert( DroneTable, {DroneID, Drone_Address, Weight} ),
+    ets:insert( DroneTable, {DroneID, Drone_Address} ),
 
     List = create_drone_list(DroneTable),
 
@@ -249,11 +249,11 @@ handlerJoinNetworkBck(AddrRecord, DroneTable, PrimaryHandlerAddr) ->
 
     PrimaryHandlerAddr ! {bindAdderess, self()}, % meet the primary
 
-    receive {joinRequest, Drone_Address, DroneID, PrimaryHandlerAddr, Weight} -> true
+    receive {joinRequest, Drone_Address, DroneID, PrimaryHandlerAddr, _Weight} -> true
     end,
 
     % store it
-    ets:insert( DroneTable, {DroneID, Drone_Address, Weight} ),
+    ets:insert( DroneTable, {DroneID, Drone_Address} ),
 
     PrimaryHandlerAddr ! confirmedBck  % send confirmation
 .
