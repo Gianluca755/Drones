@@ -3,7 +3,7 @@
 -export([start/0]).
 
 
--export([startPrimary/2, loopPrimary/3, startBck/3, loopBackup/4]).
+-export([startPrimary/2, loopPrimary/4, startBck/3, loopBackup/4]).
 -export([handlerOrderPrimary/3, handlerOrderBck/4, handlerJoinNetworkPrimary/2, handlerJoinNetworkBck/3]).
 -export([pick_rand/1, pick_rand/2, pick_rand/3 ]).
 
@@ -39,7 +39,9 @@ startPrimary(PrimaryBrokerAddr, BckBrokerAddr) ->
 
     OrderTable = ets:new(myTable, ordered_set, public),
     DroneTable = ets:new(droneTable, ordered_set, public),
-    loopPrimary(OrderTable, AddrRecord, DroneTable)
+    Time = erlang:system_time(seconds),
+
+    loopPrimary(OrderTable, AddrRecord, DroneTable, Time)
 .
 
 startBck(Primary, PrimaryBrokerAddr, BckBrokerAddr) ->
@@ -65,9 +67,20 @@ startBck(Primary, PrimaryBrokerAddr, BckBrokerAddr) ->
 %%% end init %%%
 
 
+%%% OrderTable Structure %%%
+
+% key: { ClientID, OrderID }
+% value: { Source, Destination, Weight, DroneID, Time, Status }
+
+% DroneID before been set, is also used as counter
+% Time is the time of the last status check by the manager
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 %%% processes loops %%%
 
-loopPrimary(OrderTable, AddrRecord, DroneTable) ->
+loopPrimary(OrderTable, AddrRecord, DroneTable, LastCheckTime) ->
     % the ping msg has higher priority
     % the primary server respong immediately, while the backup has some delay to mantain 5 pckt/second
     receive
@@ -75,6 +88,13 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
             AddrRecord#addr.bckManagerAddr ! {self(), pingResponse}
     after
        0 -> true
+    end,
+
+    % check the status of the orders (failed election, failed drone, ...)
+    Time = erlang:system_time(seconds),
+    if  % every 3 minutes
+        Time - LastCheckTime > (3*60) -> spawn(?MODULE, orderStatusChecker, [OrderTable, DroneTable, Time]) ;
+        true -> true
     end,
 
     receive
@@ -103,7 +123,7 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
         10 -> true
     end,
 
-    loopPrimary(OrderTable, AddrRecord, DroneTable)
+    loopPrimary(OrderTable, AddrRecord, DroneTable, Time)
 .
 
 loopBackup(OrderTable, AddrRecord, DroneTable, LastPingTime) ->
@@ -121,7 +141,8 @@ loopBackup(OrderTable, AddrRecord, DroneTable, LastPingTime) ->
                     loopBackup(OrderTable, AddrRecord, DroneTable, CurrentPingTime);
 
                 %% other cases
-                {newHandler, Pid} -> spawn(manager, handlerOrderBck, [OrderTable, AddrRecord, DroneTable, Pid]);
+                {newHandler, Pid} -> spawn(manager, handlerOrderBck, [OrderTable, AddrRecord, DroneTable, Pid]) ;
+                {newHandlerTime, Pid} -> spawn(manager, handlerUpdateTimeOrderBck, [OrderTable, AddrRecord, Pid]) ;
                 {newHandlerJoinNetwork, Pid} -> spawn(manager, handlerJoinNetworkBck, [AddrRecord, DroneTable, Pid])
 
             end;
@@ -264,6 +285,75 @@ handlerJoinNetworkBck(AddrRecord, DroneTable, PrimaryHandlerAddr) ->
     PrimaryHandlerAddr ! confirmedBck  % send confirmation
 .
 
+
+handlerUpdateTimeOrderPrimary(OrderTable, AddrRecord, Key, Time) ->
+    AddrRecord#addr.bckManagerAddr ! {newHandlerTime, self()},
+    % wait for handler of the backup
+    receive {bindAdderess, PidBckHandler} -> true
+    end,
+
+    PidBckHandler ! {Key, Time},
+    receive confirmedBck -> true
+    end,
+
+    updateTableTime(OrderTable, Key, Time)
+.
+
+handlerUpdateTimeOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
+    PrimaryHandlerAddr ! {bindAdderess, self()},
+
+    receive {Key, Time} -> true
+    end,
+
+    updateTableTime(OrderTable, Key, Time),
+
+    PrimaryHandlerAddr ! confirmedBck
+.
+
+% this function trys to check and solve the blocked orders
+orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr) ->
+
+    CheckSingleOrder =
+        fun(Order) ->
+            { {ClientID, OrderID} , {Source, Destination, Weight, DroneID, Time, Status} } = Order,
+            % DroneID also used as counter
+
+            TimeDifference = Time - CurrentTime,
+
+            if
+                Status == excessiveWeight and TimeDifference > 3*60 ->
+                if
+                   % if the manager tried less then 3 times
+                    DroneID > -2 -> % DroneID also used as inverted counter 0, -1, -2
+                    % update status only in primary, for semplicity
+                    ets:insert(OrderTable, {ClientID, OrderID} , {Source, Destination, Weight, DroneID-1, Time, Status} )
+                    spawn(manager, handlerUpdateTimeOrderPrimary, [OrderTable, AddrRecord, {ClientID, OrderID}, CurrentTime]) ;
+
+                    true -> io:format("Order failed 3 times due to excessive weight. ~w~n", [ ClientID, OrderID, Weight ])
+
+                end ;
+
+                Status == inDelivery and TimeDifference > 15*60 ->
+                % ping drone, if fails alert
+                    DroneAddr = ets:lookup(DroneTable, DroneID),
+                    DroneAddr ! {droneStatus, self()},
+                    receive {droneStatus, _, _ } -> true
+                    after 10*1000 -> io:format("Drone onffline ~w~n", [ DroneID, ClientID, OrderID, Weight ])
+                    end ;
+
+                Status == inProgress and TimeDifference > 15*60 ->
+                % we assume the election is finished ( unforeseen situation possible )
+                % recreation of the order, that will be fed to the main process of the manager.
+                % no need to update time nor status of the order
+                ManagerAddr ! {makeOrder, {}, ClientID, OrderID, {Source, Destination, Weight} }
+
+            end
+
+    end,
+
+    list:map( CheckSingleOrder, ets:tab2list(OrderTable) ) % not efficient
+.
+
 %%% utils %%%
 
 assignDroneToOrder(OrderTable, Key, DroneID) ->
@@ -285,9 +375,8 @@ updateTableStatus(Table, Key, NewStatus) ->
     end
 .
 
-updateTableTime(Table, Key) ->
+updateTableTime(Table, Key, NewTime) ->
     {Source, Destination, Weight, DroneID, _Time, Status} = ets:lookup(Table, Key),
-    NewTime = erlang:system_time(seconds),
     Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, NewTime, Status} } ), % overwrite
 
     if
