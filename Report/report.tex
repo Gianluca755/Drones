@@ -288,7 +288,10 @@ From manager to drones
 \end{itemize} \vspace{1em}
 From drones to manager
 \begin{itemize}
-	\item Election result: "\{inDelivery, DroneAddress, ClientID, OrderID, \{\} \}".
+	\item Election result: "\{inDelivery, DroneID, ClientID, OrderID, \{\} \}".
+
+	\item Election failure due to weight: "\{excessiveWeight, \{\}, ClientID, OrderID, \{\} \}".
+	The election failed, for the current order, because there wasn't an available drone with sufficient carry capacity.
 
 	\item Package delivered: "\{delivered, DroneAddress, ClientID, OrderID, \{\} \}".
 	The drone will send the message to the manager which will reliably store it. The manager will reply with "confirmDelivered", and will notify the broker.
@@ -296,7 +299,7 @@ From drones to manager
 	\item Registration:  "\{joinRequest, DroneAddress, DroneID, \{MaxCarry\}, \{\} \}".
 	The drone will send the message to the manager to express it's interest in joining the network, the manager will respond with a list of drones for it to connect to.
 
-	\item Failure:  "\{failureNotification, DroneAddress, DroneID, \{\} \}, \{\} \}".
+	\item Failure:  "\{failureNotification, DroneAddress, DroneID, \{\}, \{\} \}".
 	The drone will send the message to the manager informing it of the drone failure.
 \end{itemize} \vspace{1em}
 From drones to drones
@@ -353,6 +356,19 @@ The execution of a new delivery request follows the following steps:
 	\includegraphics[width=\linewidth]{New-order}
 	\caption{UML diagram for the execution of a delivery request}
 \end{figure}
+
+\subsection{Election behaviour}
+In case of successful election the initiator will notify the elected drone, in the normal case the elected drone will notify the manager.
+The elected drone could fail before receiving the message or silently discarding it because is already delivering a package. The manager will later inquire the situation.
+\\\\
+The election could fail due to multiple reasons:
+\begin{enumerate}
+	\item no drones available: conclude the election without notify the manager, the manager will later retry with a new election;
+	\item no drones available with sufficient battery capacity: conclude the election, the manager will later retry with a new election, after 3 times a drone can't partecipate due to battery capacity, the drone will go to a recharging station;
+	\item no drone available with sufficient weight capacity: conclude the election and notify the manager;
+\end{enumerate}
+
+
 
 Also, put here a detailed description of distributed algorithms used to solve specific problems of the project.
 

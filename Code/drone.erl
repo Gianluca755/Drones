@@ -25,7 +25,16 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList) ->
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [{NeighbourDroneID, DroneAddr}] );
 
 		{droneStatus, Manager_Server_Addr} ->
-			Manager_Server_Addr ! {droneStatus, self(), DroneID}
+			Manager_Server_Addr ! {droneStatus, self(), DroneID} ;
+
+
+		%% messages coming from the child processes
+
+		%{elected, ClientID, OrderID, Source, Destination} -> {inDelivery, DroneID, ClientID, OrderID, {}} % notify the manager
+
+		{excessiveWeight, ClientID, OrderID} -> Manager_Server_Addr ! {excessiveWeight, {}, ClientID, OrderID, {}}
+
+
 
 		% electionFailed ->  % check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 	end,
