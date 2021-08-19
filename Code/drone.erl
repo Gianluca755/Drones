@@ -18,29 +18,24 @@ drone_Loop_init(Manager_Server_Addr, DroneID, NeighbourList)->
 drone_Loop(Manager_Server_Addr, DroneID, NeighbourList) ->
 
 	receive
+		%receive the drone list to connect to form manager
 		{dronesList, Manager_Server_Addr, DronesList} ->
-			connect_to_drones(DronesList, DroneID);
-
-		{connection, DroneAddr, NeighbourDroneID} ->
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [{NeighbourDroneID, DroneAddr}] );
-
+			connect_to_drones(DronesList,[], DroneID, self(), Manager_Server_Addr );
+		%receive a request for connection from another drone
+		{connection, DroneAddr, NeighbourDroneID, NeighbourDroneAddr} ->
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [{NeighbourDroneID, NeighbourDroneAddr}]),
+			DroneAddr ! {confirmConnection, self(), DroneID};
+		%receive a drone status query from manager
 		{droneStatus, Manager_Server_Addr} ->
-			Manager_Server_Addr ! {droneStatus, self(), DroneID} ;
-
-
-		%% messages coming from the child processes
-
-		%{elected, ClientID, OrderID, Source, Destination} -> {inDelivery, DroneID, ClientID, OrderID, {}} % notify the manager
-
-		{excessiveWeight, ClientID, OrderID} -> Manager_Server_Addr ! {excessiveWeight, {}, ClientID, OrderID, {}}
-
-
-
-		% electionFailed ->  % check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
+			Manager_Server_Addr ! {droneStatus, self(), DroneID}
+		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
+		% electionFailed ->  
+			
 	end,
 	drone_Loop(Manager_Server_Addr, DroneID, NeighbourList)
 .
 
+%as a new drone send a join request to the manager
 join_Request(Manager_Server_Addr, DroneID) ->
 	Manager_Server_Addr ! {joinRequest, self(), DroneID, {}, {rand:uniform(1500)}}
 .
@@ -54,21 +49,26 @@ join_Request(Manager_Server_Addr, DroneID) ->
 
 % take a list of drones to connect to, in case of failure ask for new drone addresses to the manager
 % return the list of online and connected drones
-connect_to_drones(DronesList, DronesAlreadyConnectedTo MyDroneID, MyDroneAddr, ManagerAddr)->
+connect_to_drones(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr)->
     case DronesList of
         []     -> [] ;
         [X|Xs] -> X ! {connection, self(), MyDroneID, MyDroneAddr},
                   receive % receive confirmation from the other drone
-
+						{confirmConnection, DroneAddr, DroneID} -> 
+							NewDrone={DroneID, DroneAddr}
                   after % in case of timeout consider the drone dead and send a request to the manager for a single new drone
-
+					10 -> NewDrone= requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, 0)
+								
                   % after the request to the server, need to check that the drone is not trying to connect to itself
                   % nor that it's already connected to that drone.
 
                   % after 3 fail attempt of obtaining a new drone leave it
                   end,
-                  [ {NewDroneID, NewDroneAddr} ] ++
-                  connect_to_drones(Xs, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr)
+				  if
+					  NewDrone == {}->
+						  [  ] ++ connect_to_drones(Xs, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr)
+				  end,	  
+                  [ NewDrone ] ++ connect_to_drones(Xs, DronesAlreadyConnectedTo ++ [NewDrone], MyDroneID, MyDroneAddr, ManagerAddr)
     end
 .
 
@@ -81,4 +81,18 @@ failure(Manager_Server_Addr, DroneID)->
 %% Internal functions
 %% ====================================================================
 
-
+requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter)->
+	if counter < 3 ->
+		ManagerAddr ! {requestDroneAddr, self(), MyDroneID},
+		receive 
+			{newDrone, ManagerAddr, NewDrone}->
+				AlreadyConnectedTo= ets:member(DronesAlreadyConnectedTo, element(1,NewDrone)),
+				if
+					AlreadyConnectedTo or element(1,NewDrone) == MyDroneID ->
+						requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter + 1)
+				end,
+				ReturnedDrone=NewDrone
+		end
+	end,
+	ReturnedDrone={}
+.
