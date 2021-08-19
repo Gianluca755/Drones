@@ -84,6 +84,8 @@ loopPrimary(OrderTable, AddrRecord, DroneTable) ->
 	{joinRequest, _Drone_Address, _DroneID, {}, _Weight} = Msg ->
 	    Handler = spawn(manager, handlerJoinNetworkPrimary, [AddrRecord, DroneTable]),
         Handler ! Msg ;
+    
+    %{requestDroneAddr, DroneAddr, DroneID} -> % send a single drone new info to the drone requesting it
 
 
     % receive make order, save, reply to broker with inProgress, select random drone

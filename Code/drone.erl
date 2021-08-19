@@ -20,8 +20,10 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList) ->
 	receive
 		{dronesList, Manager_Server_Addr, DronesList} ->
 			connect_to_drones(DronesList, DroneID);
+
 		{connection, DroneAddr, NeighbourDroneID} ->
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ {DroneAddr, NeighbourDroneID});
+
 		{droneStatus, Manager_Server_Addr} ->
 			Manager_Server_Addr ! {droneStatus, self(), DroneID}
 
@@ -40,14 +42,24 @@ join_Request(Manager_Server_Addr, DroneID) ->
 
 	%Drone_Addr ! {election, self(), ClientID, OrderID, {Source, Destination, Weight}}
 
-connect_to_drones(DronesList, DroneID)->
 
-	if
-		length(DronesList) > 0 ->
-			hd(DronesList) ! {connection, self(), DroneID},
-			connect_to_drones(tl(DronesList), DroneID)
-	end
+% take a list of drones to connect to, in case of failure ask for new drone addresses to the manager
+% return the list of online and connected drones
+connect_to_drones(DronesList, MyDroneID, MyDroneAddr, ManagerAddr)->
+    case DronesList of
+        []     -> [] ;
+        [X|Xs] -> X ! {connection, self(), MyDroneID, MyDroneAddr},
+                  receive % receive confirmation from the other drone
+
+                  after % in case of timeout consider the drone dead and send a request to the manager for a single new drone
+
+                  % after the request to the server, need to check that the drone is not trying to connect to itself.
+                  end,
+                  [ {NewDroneID, NewDroneAddr} ] ++
+                  connect_to_drones(Xs,  MyDroneID, MyDroneAddr, ManagerAddr)
+    end
 .
+
 
 failure(Manager_Server_Addr, DroneID)->
 	Manager_Server_Addr ! {failureNotification, self(), DroneID}
