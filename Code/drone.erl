@@ -110,26 +110,22 @@ requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, Ma
 % return the list of online and connected Neighbour drones
 
 % check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
-checkNeighbour(NeighbourList, ConfirmedDronesConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr)->
+checkNeighbour(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr)->
     case NeighbourList of
 
-        [X|Xs] -> X ! {confirmConnection, self(), MyDroneAddr},
-                  receive % receive confirmation from the other drone
-						{confirmConnection} ->
-							checkNeighbour(Xs, ConfirmedDronesConnectedTo ++ [X], MyDroneID, MyDroneAddr, ManagerAddr)
-                  after % in case of timeout consider the drone dead, don't add it to confirmed list
-					10 -> checkNeighbour(Xs, ConfirmedDronesConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr)
+        [X|Xs] ->   X ! {confirmConnection, self(), MyDroneAddr},
 
-                  % after the request to the server, need to check that the drone is not trying to connect to itself
-                  % nor that it's already connected to that drone.
-
-                  % after 3 fail attempt of obtaining a new drone leave it
-                  end;
+                    receive confirmConnection ->
+					    checkNeighbour(Xs, OnlineDrones ++ [X], MyDroneID, MyDroneAddr, ManagerAddr)
+                    after % in case of timeout consider the drone dead, don't add it to online list
+				    2000 -> checkNeighbour(Xs, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr)
+                    end;
 	   []     ->
-		   		Len=length(ConfirmedDronesConnectedTo),
-				if Len < 3 ->
-					  NewDrone= requestNewDrone(NeighbourList, ConfirmedDronesConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, 0),
-					  checkNeighbour(NeighbourList, ConfirmedDronesConnectedTo ++ [NewDrone], MyDroneID, MyDroneAddr, ManagerAddr)
+		   		Len = length(OnlineDrones),
+				if
+				    Len < 3 -> NewDrone= requestNewDrone(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr, 0),
+					           checkNeighbour(NeighbourList, OnlineDrones ++ [NewDrone], MyDroneID, MyDroneAddr, ManagerAddr) ;
+					true -> true
 				end
 	end
 .
