@@ -156,7 +156,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: the election of a drone.
 
-\item \textbf{Request for the status of a delivery}: the client can request the status of it's request to the broker server.
+\item \textbf{Request the status of a delivery}: the client can request the status of it's request to the broker server.
 
  	\textbf{Input}: the identification number for the order;
 
@@ -164,7 +164,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: letting the client know about the status of the delivery.
 
-\item \textbf{Support for a crashed drone while it is idle}: a drone that crashes while idle can request to be taken to a repair station,
+\item \textbf{Support for a crashed drone while it is idle}: a drone that crashes while idle can request to be taken to a repair station.
 
 	\textbf{Input}: the broken drone position;
 
@@ -186,7 +186,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Output}: the unique id(if needed) and the other drones to connect to;
 
-	\textbf{Effect}: the entrance of the new drone in the network and the update of the manager drone table and the drones neighbout lists.
+	\textbf{Effect}: the entrance of the new drone in the network and the update of the manager drone table and the drones neighbour lists.
 
 \item \textbf{Election of a drone to carry out a task}: a drone will be selected based on its characteristics and its position to carry out a task
 
@@ -198,7 +198,7 @@ The following are the functional requirements required by the project:
 
 \end{itemize}
 
-\section{Non functional requirements}
+\section{Non-functional requirements}
 
 %Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
 %Are there execution time bounds? Minimum data rates?
@@ -206,7 +206,7 @@ The following are the functional requirements required by the project:
 
 The following are the non-functional requirements required by the project:
 \begin{itemize}
-\item there is no limit on the minimum weight of a package but it can't weigh more than 1500 grams ;
+\item there is no limit on the minimum weight of a package but it can't weigh more than 1500 grams;
 \item there are no restrictions on the movements of the drones through the map or their position on the map;
 \item there are no restrictions on the position of the source or destination of the delivery request;
 \item it is not required to consider security problems or Byzantine behaviour the drones;
@@ -236,7 +236,7 @@ The Erlang modules used in the implementation of the system are:
 \item \textbf{client.erl}: this module contains all the functions needed by the client to make a delivery request and to query the status of its delivery;
 \item \textbf{drone.erl}: this module contains all the functions needed by the drone to exchange messages with other drones for the election and with the management server to start the election and to update the status of the delivery;
 \item \textbf{election.erl}: this module contains all the functions needed to elect a drone for the delivery and to exchange messages with the drones to achieve this goal;
-\item \textbf{enviroment.erl}: the role of this module is to set up the broker and the manager servers and to spawn the clients and the drones;
+\item \textbf{environment.erl}: the role of this module is to set up the broker and the manager servers and to spawn the clients and the drones;
 \item \textbf{manager.erl}: this module contains all the functions needed by the manager server to handle the join of a new drone, to start the election procedure and to update the relative drone table and order status;
 \item \textbf{utils.erl}: this module contains some functions that are useful for multiple other modules.
 \end{itemize}
@@ -422,7 +422,7 @@ Details about the implementation: every choice about platforms, languages, softw
 
 
 Important choices about implementation should be described here; e.g., peculiar data structures.
-
+\section{Erlang Term Storage (ETS)}
 The storage of data relative to orders in the broker server and, drones and order in the manager server is done through the "Erlang Term Storage" (ETS) for the development mode with the purpose of preventing SSD consumption. In production the function calls should be substituted with the "Disk Erlang Term Storage" (DETS), an other option which require small changes is to use the Mnesia: the database included in Erlang, or some other database. In the development mode we choose the AVL tree as the data structure used by ETS over the hash table, without particular justification.
 
 \chapter{Validation}
@@ -438,10 +438,36 @@ The system is according to the transparencies declared in the section \ref{Syste
 	\item \textbf{reconfiguration transparency}: the structure of the network is not significantly impacted by the addition of a new drone, when a node crashes the network reconfigures itself in a transparent way for the client by removing the crashed drone from the drone table of the manager and the neighbour list of the other drones.
 \end{itemize}
 
+\section{Validation of the requirements}
+\subsection{Functional requirements}
+The system that we have developed satisfies the functional requirements defined in section \ref{Functional requirements}.
+\begin{itemize}
+\item \textbf{Make a delivery request};
+\item \textbf{Request the status of a delivery};
+\item \textbf{Support for a crashed drone while it is idle};
+\item \textbf{Support for a crashed drone after it has been elected};
+\item \textbf{A new drone joins the network};
+\item \textbf{Election of a drone to carry out a task};
+\end{itemize}
+
+\subsection{Non-functional requirements}
+The system that we have developed satisfies the functional requirements defined in section \ref{Non-functional requirements}.
+
+
+
+
+
 
 \chapter{Conclusions}
+All the requirements defined in the previous chapters have been met and all the basic functionalities(tier 1) defined in the development plan mentioned in section \ref{Development plan} have been implemented, as for the extra features(tier 2) defined in the development plan:
+\begin{itemize}
+\item we have developed a schema for the switch to the backup servers as explained in section \ref{Primary backup schema};(to expand)
+\item the many entities of our system initially were all on the same Erlang machine but we have divided each one of them in an container to better simulate the distributed architecture of the system; (to expand)
+\item the broken drone can send a message to he management server and it will elect another drone to move the broken one to a repairing station, in our system the broken drone stays in the repair station but the system can be expanded and after a certain amount of time the drone can be considered repaired and can request to join the network again.
+\end{itemize}
 
-The possible extensions are:
+\section{System extensions}
+The possible extensions to our system are:
 \begin{itemize}
 	\item realistic broker for large numbers of clients on multiple locations.
 	\item Broker support for multiple manager servers for various fleets of drones.
@@ -452,6 +478,8 @@ The possible extensions are:
 \end{itemize}
 
 Limit: scheduling performance.
+
+
 \appendix
 
 \chapter{Appendix}
