@@ -28,7 +28,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % Ne
 		% receive a request for connection from another drone
 		{connection, NeighbourDroneAddr} ->
 			NeighbourDroneAddr ! confirmConnection,
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr] );
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight );
 
 		% receive a drone status query from manager
 		{droneStatus, Manager_Server_Addr} ->
@@ -80,9 +80,7 @@ connect_to_drones(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, 
 .
 
 
-failure(Manager_Server_Addr, DroneID)->
-	Manager_Server_Addr ! {failureNotification, self(), DroneID}
-.
+
 
 %% ====================================================================
 %% Internal functions
@@ -95,7 +93,7 @@ requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, Ma
 		    receive
 			    {newDrone, NewDroneID, NewDroneAddr} ->
 			        case lists:member( NewDroneAddr, DronesList ++ DronesAlreadyConnectedTo) of
-			        true -> requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter-1)
+			        true -> requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter-1);
 			        false -> NewDroneAddr
 			        end
 			after 2000 -> {}

@@ -13,9 +13,11 @@ delivery_Request(ClientID, OrderID, Broker_Server_Addr, PosA_X, PosA_Y) ->
 
 
 status_Request(Broker_Server_Addr, ClientID, OrderID)->
-	Broker_Server_Addr ! {status_Request, self(), ClientID, OrderID}, 
+	Broker_Server_Addr ! {queryOrder, self(), ClientID, OrderID}, 
 	receive
-		{Broker_Server_Addr, Status}->
-			   Status
+		{_, _, _, Status}->
+			   io:format("The status of the order is: ~w~n",[Status]);
+		orderNotPresent -> 
+				io:format("The order is not persent ~n")
 	end.
 

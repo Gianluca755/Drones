@@ -93,7 +93,7 @@ loopPrimary(OrderTable, AddrRecord, DroneTable, LastCheckTime) ->
     % check the status of the orders (failed election, failed drone, ...)
     Time = erlang:system_time(seconds),
     if  % every 3 minutes
-        Time - LastCheckTime > (3*60) -> spawn(?MODULE, orderStatusChecker, [OrderTable, DroneTable, Time]) ;
+        Time - LastCheckTime > (3*60) -> spawn(?MODULE, orderStatusChecker, [OrderTable, DroneTable, Time, AddrRecord]) ;
         true -> true
     end,
 
@@ -321,7 +321,7 @@ handlerUpdateTimeOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
 .
 
 % this function trys to check and solve the blocked orders
-orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr) ->
+orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr, AddrRecord) ->
 
     CheckSingleOrder =
         fun(Order) ->
@@ -331,19 +331,19 @@ orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr) ->
             TimeDifference = Time - CurrentTime,
 
             if
-                Status == excessiveWeight and TimeDifference > 3*60 ->
+                (Status == excessiveWeight and TimeDifference) > 3*60 ->
                 if
                    % if the manager tried less then 3 times
                     DroneID > -2 -> % DroneID also used as inverted counter 0, -1, -2
                     % update status only in primary, for semplicity
-                    ets:insert(OrderTable, {ClientID, OrderID} , {Source, Destination, Weight, DroneID-1, Time, Status} )
+                    ets:insert(OrderTable, {ClientID, OrderID} , {Source, Destination, Weight, DroneID-1, Time, Status} ),
                     spawn(manager, handlerUpdateTimeOrderPrimary, [OrderTable, AddrRecord, {ClientID, OrderID}, CurrentTime]) ;
 
                     true -> io:format("Order failed 3 times due to excessive weight. ~w~n", [ ClientID, OrderID, Weight ])
 
                 end ;
 
-                Status == inDelivery and TimeDifference > 15*60 ->
+                (Status == inDelivery and TimeDifference) > 15*60 ->
                 % ping drone, if fails alert
                     DroneAddr = ets:lookup(DroneTable, DroneID),
                     DroneAddr ! {droneStatus, self()},
@@ -351,7 +351,7 @@ orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr) ->
                     after 10*1000 -> io:format("Drone onffline ~w~n", [ DroneID, ClientID, OrderID, Weight ])
                     end ;
 
-                Status == inProgress and TimeDifference > 15*60 ->
+                (Status == inProgress and TimeDifference) > 15*60 ->
                 % we assume the election is finished ( unforeseen situation possible )
                 % recreation of the order, that will be fed to the main process of the manager.
                 % no need to update time nor status of the order
@@ -391,7 +391,7 @@ updateTableTime(Table, Key, NewTime) ->
 
     if
         Result == false ->
-            io:format("Error failed attempt to update time the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
+            io:format("Error failed attempt to update time the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, Status} }])
     end
 .
 
@@ -439,7 +439,7 @@ create_drone_list(DroneTable) ->
 
 mapLookup(Table, KeyList) ->
     case KeyList of
-    [] -> []
+    [] -> [];
     [X|Xs] -> [ ets:lookup(Table, X) | mapLookup(Table, Xs)]
     end
 .

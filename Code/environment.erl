@@ -2,7 +2,7 @@
 %% @doc @todo Add description to 'Enviroment'.
 
 
--module('enviroment').
+-module('environment').
 
 %% ====================================================================
 %% API functions
