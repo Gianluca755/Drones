@@ -148,7 +148,7 @@ The schedule for how you plan to carry our your design and implementation is as 
 
 The following are the functional requirements required by the project:
 \begin{itemize}
-\item \textbf{make a delivery request}: a client can request the delivery of a package form point A to point B.
+\item \textbf{Make a delivery request}: a client can request the delivery of a package form point A to point B.
 
 	\textbf{Input}: the package starting position, the destination and the weight of the package;
 
@@ -156,7 +156,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: the election of a drone.
 
-\item \textbf{request for the status of a delivery}:the client can request the status of it's request to the broker server.
+\item \textbf{Request for the status of a delivery}: the client can request the status of it's request to the broker server.
 
  	\textbf{Input}: the identification number for the order;
 
@@ -164,8 +164,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: letting the client know about the status of the delivery.
 
-
-\item \textbf{message after crash while idle}: a drone that crashes while idle can request to be taken to a repair station,
+\item \textbf{Support for a crashed drone while it is idle}: a drone that crashes while idle can request to be taken to a repair station,
 
 	\textbf{Input}: the broken drone position;
 
@@ -173,7 +172,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: the election of a drone that will move the broken drone to a repair station.
 
-\item \textbf{message after crash after being chosen}: a drone that crashes after it has been chosen can request to be taken to a repair station.
+\item \textbf{Support for a broken drone after it has been elected}: a drone that crashes after it has been chosen can request to be taken to a repair station.
 
 	\textbf{Input}: the broken drone position and whether or not it picked up the package;
 
@@ -181,13 +180,21 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: the effect is the election of a drone that will move it to a repair station and the election of another drone to carry out the delivery.
 
-\item \textbf{a new drone joins the network}:a new drone that wants to join the network sends a message to the management server.
+\item \textbf{A new drone joins the network}: a new drone that wants to join the network sends a message to the management server.
 
-	\textbf{Input}: the new drone unique id if he has one, its carry weight and it's position;
+	\textbf{Input}: the new drone unique id if he has one, its carry weight and its position;
 
 	\textbf{Output}: the unique id(if needed) and the other drones to connect to;
 
-	\textbf{Effect}: the entrance of the new drone in the network.
+	\textbf{Effect}: the entrance of the new drone in the network and the update of the manager drone table and the drones neighbout lists.
+
+\item \textbf{Election of a drone to carry out a task}: a drone will be selected based on its characteristics and its position to carry out a task 
+
+	\textbf{Input}: the drone table and the task to do;
+
+	\textbf{Output}: the selected drone or an error message if one can't be selected;
+
+	\textbf{Effect}: the selection of a specific drone to carry out a delivery or to move a broken drone to a repair station.
 
 \end{itemize}
 
@@ -199,12 +206,12 @@ The following are the functional requirements required by the project:
 
 The following are the non-functional requirements required by the project:
 \begin{itemize}
-\item there is no limit on the minimum weight but the package can't weigh more than X;
-\item there are no restrictions on the movements of the drones;
-\item there are no restrictions on the source or destination of the delivery request;
+\item there is no limit on the minimum weight of a package but it can't weigh more than 1500 grams ;
+\item there are no restrictions on the movements of the drones through the map or their position on the map;
+\item there are no restrictions on the position of the source or destination of the delivery request;
 \item it is not required to consider security problems or Byzantine behaviour the drones;
-
 \item the system must be able to recover from the failure of a drone or a server;
+\item a drone has to respond to messages from other drones or the management servers within 10 seconds or it will be considered dead;
 \item it's important for following transparencies to be present:
 	\begin{itemize}
 	\item \textbf{concurrency}: only one drone will be selected to carry out the delivery of the package;
@@ -411,10 +418,10 @@ The storage of data relative to orders in the broker server and, drones and orde
 The system is according to the transparencies declared in the section \ref{System features}
 \begin{itemize}
 	\item \textbf{concurrency transparency}: the system must be able to handle multiple requests at the same time, this is done in such a way that every clients acts like if they were the only one making requests;
-	\item \textbf{failure transparency}:the system manages faults of the drones and the servers in a transparent way by switching to the backup servers or by selecting another drone to finish the delivery;
+	\item \textbf{failure transparency}:the system manages faults of the drones and the servers in a transparent way: the broker and manager servers are synchronized with a backup server each that pings them and when the main server crashes the backup one will take its place, this way only a small part of the system will be disrupted, if a drone crashes another one will be selected to finish the delivery, it also removes the crashed drones from the drone table so they will not be candidates in other elections;
 	\item \textbf{location transparency}: the client only needs to be able to connect with the broker server to request the delivery and to query the status of the request, it does not need to know which drones handle the request, their position or address or the physical position of the servers;
-	\item \textbf{performance and scaling transparency}: the increase in the overall load on the network can be managed by increasing the number of drones in the network, the overhead of adding a new drone to the network is negligible. There is only one broker and one management server for the network and they can become bottlenecks;
-	\item \textbf{reconfiguration transparency}: the structure of the network is not significantly impacted by the addition of a new drone, when a node crashes the network reconfigures itself in a transparent way for the client.
+	\item \textbf{performance and scaling transparency}: the increase in the overall load on the network can be managed by increasing the number of drones in the network, the overhead of adding a new drone to the network is negligible. There is only one broker and one management server for the network and they can become bottlenecks, this could be solved by adding in the a proxy server that chooses the leader of the various broker servers;
+	\item \textbf{reconfiguration transparency}: the structure of the network is not significantly impacted by the addition of a new drone, when a node crashes the network reconfigures itself in a transparent way for the client by removing the crashed drone from the drone table of the manager and the neighbour list of the other drones.
 \end{itemize}
 
 

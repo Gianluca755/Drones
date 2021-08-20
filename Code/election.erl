@@ -68,13 +68,11 @@ initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Nei
     % if there is no drone that can carry the weight check for -1, and alert main process of drone that will noitify the manager
     % ( the election doesn't flag the other cases where the fleet can't deliver because the manager will retry )
     if
-        ElectedDroneID == -1 -> true ;
-        ElectedDroneID == -2 -> DroneAddr ! {excessiveWeight, ClientID, OrderID} ;
-
-        true -> % in case of direct connection otherwise propagate in simil broadcast.
-                % notify main process of the elected drone
-                ElectedPid ! {elected, ClientID, OrderID, Source, Destination}
+        ElectedDroneID == -1 -> DroneAddr ! {excessiveWeight, ClientID, OrderID} ;
+        true -> % in case of direct connection otherwise propagate in simil broadcast
+                ElectedPid ! {elected, ClientID, OrderID, Source, Destination }
     end
+
 .
 
 

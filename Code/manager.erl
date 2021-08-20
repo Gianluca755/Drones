@@ -104,15 +104,18 @@ loopPrimary(OrderTable, AddrRecord, DroneTable, LastCheckTime) ->
 	{joinRequest, _Drone_Address, _DroneID, {}, _Weight} = Msg ->
 	    Handler = spawn(manager, handlerJoinNetworkPrimary, [AddrRecord, DroneTable]),
         Handler ! Msg ;
+    % send a single drone new info to the drone requesting it
+    {requestDroneAddr, DroneAddr, DroneID} ->
+		NewDrone=pick_rand(DroneTable),
+		DroneAddr ! {newDrone, self(), NewDrone};
 
-    %{requestDroneAddr, DroneAddr, DroneID} -> % send a single drone new info to the drone requesting it
 
 
     % receive make order, save, reply to broker with inProgress, select random drone
     % receive inDelivery (means elected) from a drone, save info and new status, inform the broker
     % receive delivered from a drone, save info and new status, inform the broker
     { Type, _Client_or_Drone_Address, _ClientID, _OrderID, _Description } = Msg
-    when Type == makeOrder ; Type == inDelivery ; Type == inProgress ; Type == excessiveWeight ->
+    when Type == makeOrder ; Type == inDelivery ; Type == inProgress ->
         Handler = spawn( manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable] ),
         Handler ! Msg    % let the new handler apply the order
 
@@ -175,9 +178,9 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, {
                 {ClientID, OrderID},
-                {Source, Destination, Weight, 0, erlang:system_time(seconds), saved} }
+                {Source, Destination, Weight, 0, erlang:system_time(milli_seconds), saved} }
             ),
-            % 0 for empty droneID, the time is the last time of the inspection by the manager, not last modification
+            % 0 for empty droneID, the time is the last time of the inspection by the manager
 
 
             % select random drone
@@ -203,13 +206,9 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             }
             ;
 
-        Type == excessiveWeight -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type),
-                                   updateTableTime(OrderTable, {ClientID, OrderID})
-
         % cases inDelivery and delivered
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type),
-
-                AddrRecord#addr.primaryBrokerAddr ! % send to broker
+                AddrRecord#addr.primaryBrokerAddr !
                 {   Type,
                     {},
                     ClientID,
@@ -232,7 +231,7 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
     if
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
-            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, 0, erlang:system_time(seconds), saved} } ),
+            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, 0, saved} } ),
             PrimaryHandlerAddr ! confirmedBck,
 
             receive DroneID -> true
@@ -259,7 +258,7 @@ handlerJoinNetworkPrimary(AddrRecord, DroneTable) ->
     receive {joinRequest, Drone_Address, DroneID, _, _Weight} -> true
     end,
 
-    PidBckHandler ! {joinRequest, Drone_Address, DroneID, self(), Weight},
+    PidBckHandler ! {joinRequest, Drone_Address, DroneID, self(), _Weight},
 
     receive confirmedBck -> true
     end,
@@ -362,7 +361,7 @@ assignDroneToOrder(OrderTable, Key, DroneID) ->
     Result = ets:insert(OrderTable, {Key, {Source, Destination, Weight, DroneID, Time, Status} } ), % overwrite
     if
         Result == false ->
-            io:format("Error failed attempt to assign the drone in the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, DroneID} }])
+            io:format("Error failed attempt to modify the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, DroneID} }])
     end
 .
 
