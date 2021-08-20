@@ -15,7 +15,8 @@ drone_Loop_init(Manager_Server_Addr, DroneID, SupportedWeight) ->
 	drone_Loop(Manager_Server_Addr, DroneID, [], SupportedWeight)
 .
 
-drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) ->
+
+drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % NeighbourList is only addresses
 
 	receive
 

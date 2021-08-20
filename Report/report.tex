@@ -289,28 +289,42 @@ From manager to drones
 
 	\item Drone status:
 
-	\item Order status:
+	%\item Order status:
 
-	\item List of drones: "List". The message contains the list of new neighbours drones.
+	\item List of drones: "\{ droneList, ListOfAddresses \}".
+	The message contains the list of new neighbours drones.
+
+	\item New drone: "\{newDrone, NewDroneAddr\}".
+	The message is the response at the request of new drone by a drone.
+
 \end{itemize} \vspace{1em}
 From drones to manager
 \begin{itemize}
-	\item Election result: "\{inDelivery, DroneID, ClientID, OrderID, \{\} \}".
+	\item Registration:  "\{joinRequest, DroneID, DroneAddress \}".
+	The drone will send the message to the manager to express it's interest in joining the network, the manager will respond with a list of drones addresses.
 
-	\item Election failure due to weight: "\{excessiveWeight, \{\}, ClientID, OrderID, \{\} \}".
-	The election failed, for the current order, because there wasn't an available drone with sufficient carry capacity.
+	\item Request new drone address: "\{ requestDroneAddr, DroneID, DroneAddr \}".
+	This message is sent when the drone has a low number of neighbours. The variables contains information about the sender.
 
 	\item Package delivered: "\{delivered, DroneAddress, ClientID, OrderID, \{\} \}".
 	The drone will send the message to the manager which will reliably store it. The manager will reply with "confirmDelivered", and will notify the broker.
 
-	\item Registration:  "\{joinRequest, DroneAddress, DroneID, \{MaxCarry\}, \{\} \}".
-	The drone will send the message to the manager to express it's interest in joining the network, the manager will respond with a list of drones for it to connect to.
+	\item Election result: "\{inDelivery, DroneID, ClientID, OrderID, \{\} \}".
+
+	\item Election failure due to weight: "\{excessiveWeight, \{\}, ClientID, OrderID, \{\} \}".
+	The election failed, for the current order, because there wasn't an available drone with sufficient carry capacity.
 
 	\item Failure:  "\{failureNotification, DroneAddress, DroneID, \{\}, \{\} \}".
 	The drone will send the message to the manager informing it of the drone failure.
 \end{itemize} \vspace{1em}
 From drones to drones
 \begin{itemize}
+	\item Connection request: "\{connection, DroneAddress\}".
+	This message is sent when a drone wants to connect to an other. The reception of this message will trigger a response (see next item).
+
+	\item Connection confirmation: "confirmConnection".
+	The message is sent after the drone that made the request has been added to the list of neighbours. This message is the response of the previous one.
+
 	\item Echo election propagation: "\{election, HandlerAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}".
 	This message is sent in the first phase of the election.
 
@@ -395,9 +409,9 @@ The basic (tier 1) functionalities that the system must offer are:
 The extended (tier 2) functionalities are:
 \begin{itemize}
 \item support for failover and takeover of the servers;
-\item instead of executing the various parts of the system on the same Erlang Machine, use containers to separate the various components of the system.
+\item instead of executing the various parts of the system on the same Erlang Machine, use containers to separate the various components of the system;
 \item transportation of a broken drone (with various possible weights), to a repairing station;
-
+\item ability of the manager to launch a query to the drones, asking for info on a particular order.
 \end{itemize}
 
 %Since it is difficult to predict just how hard implementing a new system will be, you should formulate as a set of ``tiers,'' where the basic tier is something you’re sure you can complete, and the additional tiers add more features, at both the application and the system level.
@@ -434,6 +448,7 @@ The possible extensions are:
 	\item Support for warehouses, dynamic number of drones.
 	\item Security concerns should be addressed, in all the parts of the system.
 	\item The backup system could be improved with more servers, this can be achieved not by adding the backup server's addresses in the clients, but by a proxy server that choose the leader of the various broker servers. The broker servers can be configured with a master slave configuration or some more efficient solution like data partitioning. The proxy server can act as load balancer, accordingly to the configuration chosen.
+	\item If the manager has the info about the supported weight of the drones, it can avoid send false alert when the delivery fails due to occupied drones.
 \end{itemize}
 
 Limit: scheduling performance.
