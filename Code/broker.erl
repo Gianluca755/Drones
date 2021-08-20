@@ -38,7 +38,7 @@ startPrimary(PrimaryManagerAddr, BckManagerAddr) ->
                         primaryManagerAddr = PrimaryManagerAddr,
                         bckManagerAddr = BckManagerAddr},
 
-    OrderTable = ets:new(myTable, ordered_set, public),
+    OrderTable = ets:new(myTable, [ordered_set, public]),
     loopPrimary(OrderTable, AddrRecord)
 .
 
@@ -53,7 +53,7 @@ startBck(Primary, PrimaryManagerAddr, BckManagerAddr) ->
                         primaryManagerAddr = PrimaryManagerAddr,
                         bckManagerAddr = BckManagerAddr},
 
-    OrderTable = ets:new(myTable, ordered_set, public),
+    OrderTable = ets:new(myTable, [ordered_set, public]),
 
     AddrRecord#addr.primaryBrokerAddr ! ping, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),

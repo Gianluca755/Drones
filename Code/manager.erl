@@ -37,8 +37,8 @@ startPrimary(PrimaryBrokerAddr, BckBrokerAddr) ->
                         primaryManagerAddr = self(),
                         bckManagerAddr = Temp},
 
-    OrderTable = ets:new(myTable, ordered_set, public),
-    DroneTable = ets:new(droneTable, ordered_set, public),
+    OrderTable = ets:new(myTable, [ordered_set, public]),
+    DroneTable = ets:new(droneTable, [ordered_set, public]),
     Time = erlang:system_time(seconds),
 
     loopPrimary(OrderTable, AddrRecord, DroneTable, Time)
@@ -55,8 +55,8 @@ startBck(Primary, PrimaryBrokerAddr, BckBrokerAddr) ->
                         primaryManagerAddr = Primary,
                         bckManagerAddr = self()},
 
-    OrderTable = ets:new(myTable, ordered_set, public),
-    DroneTable = ets:new(droneTable, ordered_set, public),
+    OrderTable = ets:new(myTable, [ordered_set, public]),
+    DroneTable = ets:new(droneTable, [ordered_set, public]),
 
     AddrRecord#addr.primaryManagerAddr ! ping, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),
@@ -101,14 +101,13 @@ loopPrimary(OrderTable, AddrRecord, DroneTable, LastCheckTime) ->
 
     % DroneTable has key: DroneID, value: DroneAddr
 
-	{joinRequest, _Drone_Address, _DroneID, {}, _Weight} = Msg ->
+	{joinRequest, _DroneID, _Drone_Address} = Msg ->
 	    Handler = spawn(manager, handlerJoinNetworkPrimary, [AddrRecord, DroneTable]),
         Handler ! Msg ;
-    % send a single drone new info to the drone requesting it
-    {requestDroneAddr, DroneAddr, DroneID} ->
-		NewDrone=pick_rand(DroneTable),
-		DroneAddr ! {newDrone, self(), NewDrone};
 
+    % send a single drone new info to the drone requesting it
+    % makes two attempt to select a new drone otherwise doesn't reply to the request
+    {requestDroneAddr, DroneID, DroneAddr} -> spawn(manager, handlerNewDroneRequest, [DroneTable, DroneID, DroneAddr]) ;
 
 
     % receive make order, save, reply to broker with inProgress, select random drone
@@ -255,33 +254,45 @@ handlerJoinNetworkPrimary(AddrRecord, DroneTable) ->
     receive {bindAdderess, PidBckHandler} -> true
     end,
 
-    receive {joinRequest, Drone_Address, DroneID, _, _Weight} -> true
+    receive {joinRequest, DroneID, Drone_Address} = Msg -> true
     end,
 
-    PidBckHandler ! {joinRequest, Drone_Address, DroneID, self(), _Weight},
+    PidBckHandler ! Msg,
 
     receive confirmedBck -> true
     end,
 
+    List = create_drone_list(DroneTable), % only addresses of the drones, no IDs
+    Drone_Address ! {droneList, List},
+
     % store it
-    ets:insert( DroneTable, {DroneID, Drone_Address} ),
-
-    List = create_drone_list(DroneTable),
-
-    Drone_Address ! List
+    ets:insert( DroneTable, {DroneID, Drone_Address} )
 .
 
 handlerJoinNetworkBck(AddrRecord, DroneTable, PrimaryHandlerAddr) ->
 
     PrimaryHandlerAddr ! {bindAdderess, self()}, % meet the primary
 
-    receive {joinRequest, Drone_Address, DroneID, PrimaryHandlerAddr, _Weight} -> true
+    receive {joinRequest, DroneID, Drone_Address} -> true
     end,
 
     % store it
     ets:insert( DroneTable, {DroneID, Drone_Address} ),
 
     PrimaryHandlerAddr ! confirmedBck  % send confirmation
+.
+
+% makes two attempt to select a new drone otherwise doesn't reply to the request
+handlerNewDroneRequest(DroneTable, DroneID, DroneAddr) ->
+
+	{NewDroneID, NewDroneAddr} = pick_rand(DroneTable),
+    {NewDroneID2, NewDroneAddr2} = pick_rand(DroneTable),
+
+    if
+    NewDroneID  /= DroneID -> DroneAddr ! {newDrone, NewDroneAddr};
+    NewDroneID2 /= DroneID -> DroneAddr ! {newDrone, NewDroneAddr2};
+    true -> true
+    end
 .
 
 
@@ -350,7 +361,7 @@ orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr) ->
 
     end,
 
-    list:map( CheckSingleOrder, ets:tab2list(OrderTable) ) % not efficient
+    lists:map( CheckSingleOrder, ets:tab2list(OrderTable) ) % not efficient
 .
 
 %%% utils %%%
@@ -405,15 +416,15 @@ pick_rand(Table, Key, N) ->
     if
         N == 0 -> ets:lookup(Table, Key);
         N  > 0 -> X = ets:next(Table, Key),
-                      pick_rand(Table, X, N-1)
+                  pick_rand(Table, X, N-1)
     end
 .
 
 
-% return the list that has to be send to the new drone
+% return the list of drone addresses that has to be send to the new drone
 create_drone_list(DroneTable) ->
     Size = ets:info(DroneTable, size),
-	List = case Size of
+	ListID = case Size of
 		      0 -> [] ;
 		      1 -> ets:first(DroneTable);
 		      2 -> First = ets:first(DroneTable), Second = ets:next(DroneTable, First), [First, Second];
@@ -422,7 +433,15 @@ create_drone_list(DroneTable) ->
 
 		      _Other -> create_drone_list_aux(DroneTable, [], Size)
 		   end,
-	List
+	% return
+	mapLookup(DroneTable, ListID)
+.
+
+mapLookup(Table, KeyList) ->
+    case KeyList of
+    [] -> []
+    [X|Xs] -> [ ets:lookup(Table, X) | mapLookup(Table, Xs)]
+    end
 .
 
 create_drone_list_aux(DroneTable, List, Counter)->
