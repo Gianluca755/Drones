@@ -43,7 +43,7 @@ startPrimary(PrimaryManagerAddr, BckManagerAddr) ->
                         bckManagerAddr = BckManagerAddr},
 
     OrderTable = ets:new(myTable, [ordered_set, public]),
-    io:format("Primary broker init completed"),
+    io:format("Primary broker init completed ~n"),
 
     loopPrimary(OrderTable, AddrRecord)
 .
@@ -67,7 +67,7 @@ startBck(Primary, PrimaryManagerAddr, BckManagerAddr) ->
     AddrRecord#addr.primaryBrokerAddr ! ping, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),
 
-    io:format("Backup broker init completed"),
+    io:format("Backup broker init completed ~n"),
 
     loopBackup(OrderTable, AddrRecord, FirstPingTime)
 .
