@@ -42,7 +42,7 @@ startPrimary(PrimaryManagerAddr, BckManagerAddr) ->
                         primaryManagerAddr = PrimaryManagerAddr,
                         bckManagerAddr = BckManagerAddr},
 
-    OrderTable = ets:new(myTable, [ordered_set, public]),
+    OrderTable = ets:new(myTable1, [ordered_set, public]),
     io:format("Primary broker init completed ~n"),
 
     loopPrimary(OrderTable, AddrRecord)
@@ -62,7 +62,7 @@ startBck(Primary, PrimaryManagerAddr, BckManagerAddr) ->
                         primaryManagerAddr = PrimaryManagerAddr,
                         bckManagerAddr = BckManagerAddr},
 
-    OrderTable = ets:new(myTable, [ordered_set, public]),
+    OrderTable = ets:new(myTable2, [ordered_set, public]),
 
     AddrRecord#addr.primaryBrokerAddr ! ping, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),
@@ -169,7 +169,7 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
     if
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
-            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } );
+            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } ) ;
         true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
     end,
 

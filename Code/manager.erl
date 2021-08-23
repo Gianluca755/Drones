@@ -21,7 +21,9 @@ start() ->
     Bck = spawn(manager, startBck, [Primary]),
 
     io:format("Primary manager: ~w~n", [Primary]),
-    io:format("Backup manager: ~w~n", [Bck])
+    io:format("Backup manager: ~w~n", [Bck]),
+
+    broker:start(Primary, Bck)
 .
 
 startPrimary() ->

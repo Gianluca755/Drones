@@ -19,4 +19,10 @@ create_drone_list OK
     manager:create_drone_list(More).
 -------------------------------------------------------------
 
+Partial
+c(manager). c(broker). c(client).
+manager:start().
 
+
+Order not present in broker OK
+makeOrder CRASH
