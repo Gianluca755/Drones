@@ -5,8 +5,6 @@
 
 -export([startPrimary/2, loopPrimary/4, startBck/3, loopBackup/4]).
 -export([handlerOrderPrimary/3, handlerOrderBck/4, handlerJoinNetworkPrimary/2, handlerJoinNetworkBck/3]).
--export([pick_rand/1, pick_rand/2, pick_rand/3 ]).
-
 
 -record(addr, { primaryBrokerAddr = 0,
                 bckBrokerAddr = 0,
@@ -339,7 +337,7 @@ orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr, AddrRecord)
                     ets:insert(OrderTable, {ClientID, OrderID} , {Source, Destination, Weight, DroneID-1, Time, Status} ),
                     spawn(manager, handlerUpdateTimeOrderPrimary, [OrderTable, AddrRecord, {ClientID, OrderID}, CurrentTime]) ;
 
-                    true -> io:format("Order failed 3 times due to excessive weight. ~w~n", [ ClientID, OrderID, Weight ])
+                    true -> io:format("Order failed 3 times due to excessive weight. Client:~w, Order:~w, Weight:~w~n", [ ClientID, OrderID, Weight ])
 
                 end ;
 
@@ -348,7 +346,7 @@ orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr, AddrRecord)
                     DroneAddr = ets:lookup(DroneTable, DroneID),
                     DroneAddr ! {droneStatus, self()},
                     receive {droneStatus, _, _ } -> true
-                    after 10*1000 -> io:format("Drone onffline ~w~n", [ DroneID, ClientID, OrderID, Weight ])
+                    after 10*1000 -> io:format("Drone offline Drone:~w, Client:~w, Order:~w, Weight:~w~n", [ DroneID, ClientID, OrderID, Weight ])
                     end ;
 
                 (Status == inProgress and TimeDifference) > 15*60 ->
@@ -397,7 +395,7 @@ updateTableTime(Table, Key, NewTime) ->
 
 
 
-% returns an element of the table (for drone selection in join and election)
+% returns a single element of the table (for drone selection in join and election)
 pick_rand(Table) ->
     Size = ets:info(Table, size),
     Rand = rand:uniform(Size),
@@ -406,7 +404,7 @@ pick_rand(Table) ->
 
 pick_rand(Table, N) ->
     if
-        N == 1 -> ets:lookup( Table, ets:first(Table) ) ;
+        N == 1 -> [Elem] = ets:lookup( Table, ets:first(Table) ), Elem ;
         true   -> First = ets:first(Table),
                   pick_rand(Table, First, N-1)
     end
@@ -414,33 +412,37 @@ pick_rand(Table, N) ->
 
 pick_rand(Table, Key, N) ->
     if
-        N == 0 -> ets:lookup(Table, Key);
+        N == 0 -> [Elem] = ets:lookup(Table, Key), Elem;
         N  > 0 -> X = ets:next(Table, Key),
                   pick_rand(Table, X, N-1)
     end
 .
 
 
-% return the list of drone addresses that has to be send to the new drone
+% return the list of drone addresses (3 elements) that has to be send to the new drone
 create_drone_list(DroneTable) ->
     Size = ets:info(DroneTable, size),
 	ListID = case Size of
 		      0 -> [] ;
-		      1 -> ets:first(DroneTable);
+		      1 -> [ets:first(DroneTable)] ;
 		      2 -> First = ets:first(DroneTable), Second = ets:next(DroneTable, First), [First, Second];
 		      3 -> First = ets:first(DroneTable), Second = ets:next(DroneTable, First),
 		           Third = ets:next(DroneTable, Second), [First, Second, Third];
 
-		      _Other -> create_drone_list_aux(DroneTable, [], Size)
+		      _Other -> create_drone_list_aux(DroneTable, [], 3)
 		   end,
-	% return
+	% first() and next() works on keys
+	% extract the addresses
 	mapLookup(DroneTable, ListID)
 .
 
+% take key list return Value list
 mapLookup(Table, KeyList) ->
+    io:format("keylist: ~w~n", [KeyList]),
     case KeyList of
-    [] -> [];
-    [X|Xs] -> [ ets:lookup(Table, X) | mapLookup(Table, Xs)]
+    []      ->  [];
+    [X|Xs]  ->  [{_Key, Value}] = ets:lookup(Table, X), % extract the value
+                [ Value | mapLookup(Table, Xs)]
     end
 .
 
@@ -449,10 +451,11 @@ create_drone_list_aux(DroneTable, List, Counter)->
 	    Counter == 0 -> List ;
 		Counter  > 0 ->
 			New_drone = pick_rand(DroneTable),
-			IsMember = lists:member(New_drone, List),
+			{Key, _Value} = New_drone,
+			IsMember = lists:member(Key, List),
 
 			if
-			    (not IsMember) -> create_drone_list_aux(DroneTable, [New_drone | List] , Counter-1);
+			    (not IsMember) -> create_drone_list_aux(DroneTable, [Key | List] , Counter-1) ;
 			    IsMember       -> create_drone_list_aux(DroneTable, List, Counter)
 			end
 	end

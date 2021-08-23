@@ -1,0 +1,20 @@
+manager.erl
+
+pick_rand OK
+mapLookup OK
+
+create_drone_list
+
+    Empty = ets:new(tableE, [ordered_set]). One = ets:new(tableO, [ordered_set]).
+    Two = ets:new(tableTw, [ordered_set]). Three = ets:new(tableTr, [ordered_set]).
+    More = ets:new(tableM, [ordered_set]).
+
+    ets:insert(One, {a,1}). ets:insert(Two, {a,1}). ets:insert(Two, {b,2}).
+    ets:insert(Three, {a,1}). ets:insert(Three, {b,2}). ets:insert(Three, {c,3}).
+    ets:insert(More, {a,1}). ets:insert(More, {b,2}). ets:insert(More, {c,3}).
+    ets:insert(More, {d,4}). ets:insert(More, {e,5}).
+
+    manager:create_drone_list(Empty). manager:create_drone_list(One).
+    manager:create_drone_list(Two). manager:create_drone_list(Three).
+    manager:create_drone_list(More).
+
