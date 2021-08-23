@@ -2,8 +2,8 @@
 -export([start/2]).
 
 % private
-%-export([startPrimary/2, loopPrimary/2, startBck/3, loopBackup/3]).
-%-export([handlerOrderPrimary/2, handlerOrderBck/3]).
+-export([startPrimary/2, loopPrimary/2, startBck/3, loopBackup/3]).
+-export([handlerOrderPrimary/2, handlerOrderBck/3]).
 
 -record(addr, { primaryBrokerAddr = 0,
                 bckBrokerAddr = 0,
@@ -32,6 +32,10 @@ startPrimary(PrimaryManagerAddr, BckManagerAddr) ->
                 {Pid, addrInit} -> Pid
             end,
 
+    PrimaryManagerAddr ! {primaryBrokerAddr, self()},
+    BckManagerAddr ! {primaryBrokerAddr, self()},
+
+
     % init data structures
     AddrRecord = #addr{ primaryBrokerAddr = self(),
                         bckBrokerAddr = Temp,
@@ -39,6 +43,8 @@ startPrimary(PrimaryManagerAddr, BckManagerAddr) ->
                         bckManagerAddr = BckManagerAddr},
 
     OrderTable = ets:new(myTable, [ordered_set, public]),
+    io:format("Primary broker init completed"),
+
     loopPrimary(OrderTable, AddrRecord)
 .
 
@@ -46,6 +52,9 @@ startBck(Primary, PrimaryManagerAddr, BckManagerAddr) ->
 
     % register bck to primaryBrokerAddr
     Primary ! {self(), addrInit},
+
+    PrimaryManagerAddr ! {primaryBrokerAddr, self()},
+    BckManagerAddr ! {primaryBrokerAddr, self()},
 
     % init data structures
     AddrRecord = #addr{ primaryBrokerAddr = Primary,
@@ -57,6 +66,8 @@ startBck(Primary, PrimaryManagerAddr, BckManagerAddr) ->
 
     AddrRecord#addr.primaryBrokerAddr ! ping, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),
+
+    io:format("Backup broker init completed"),
 
     loopBackup(OrderTable, AddrRecord, FirstPingTime)
 .

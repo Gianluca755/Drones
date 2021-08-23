@@ -2,9 +2,11 @@
 
 -export([start/0]).
 
-
-%-export([startPrimary/2, loopPrimary/4, startBck/3, loopBackup/4]).
-%-export([handlerOrderPrimary/3, handlerOrderBck/4, handlerJoinNetworkPrimary/2, handlerJoinNetworkBck/3]).
+% private
+-export([startPrimary/0, loopPrimary/4, startBck/1, loopBackup/4]).
+-export([handlerOrderPrimary/3, handlerOrderBck/4, handlerJoinNetworkPrimary/2, handlerJoinNetworkBck/3]).
+-export([handlerNewDroneRequest/3, handlerUpdateTimeOrderPrimary/4, handlerUpdateTimeOrderBck/3]).
+-export([orderStatusChecker/5, updateTableTime/3]).
 
 -record(addr, { primaryBrokerAddr = 0,
                 bckBrokerAddr = 0,
@@ -22,12 +24,20 @@ start() ->
     io:format("Backup manager: ~w~n", [Bck])
 .
 
-startPrimary(PrimaryBrokerAddr, BckBrokerAddr) ->
+startPrimary() ->
+
+    % wait for bckManagerAddr
+    Temp =  receive
+                {addrInit, Pid} -> Pid
+            end,
+
+    % wait for primaryBrokerAddr
+    receive {primaryBrokerAddr, PrimaryBrokerAddr} -> true
+    end,
 
     % wait for bckBrokerAddr
-    Temp =  receive
-                {Pid, addrInit} -> Pid
-            end,
+    receive {bckBrokerAddr, BckBrokerAddr} -> true
+    end,
 
     % init data structures
     AddrRecord = #addr{ primaryBrokerAddr = PrimaryBrokerAddr,
@@ -39,13 +49,23 @@ startPrimary(PrimaryBrokerAddr, BckBrokerAddr) ->
     DroneTable = ets:new(droneTable, [ordered_set, public]),
     Time = erlang:system_time(seconds),
 
+    io:format("Primary manager init completed ~n"),
+
     loopPrimary(OrderTable, AddrRecord, DroneTable, Time)
 .
 
-startBck(Primary, PrimaryBrokerAddr, BckBrokerAddr) ->
+startBck(Primary) ->
 
     % register bck to primaryBrokerAddr
-    Primary ! {self(), addrInit},
+    Primary ! {addrInit, self()},
+
+    % wait for primaryBrokerAddr
+    receive {primaryBrokerAddr, PrimaryBrokerAddr} -> true
+    end,
+
+    % wait for bckBrokerAddr
+    receive {bckBrokerAddr, BckBrokerAddr} -> true
+    end,
 
     % init data structures
     AddrRecord = #addr{ primaryBrokerAddr = PrimaryBrokerAddr,
@@ -58,6 +78,8 @@ startBck(Primary, PrimaryBrokerAddr, BckBrokerAddr) ->
 
     AddrRecord#addr.primaryManagerAddr ! ping, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),
+
+    io:format("Bck manager init completed ~n"),
 
     loopBackup(OrderTable, AddrRecord, DroneTable, FirstPingTime)
 .

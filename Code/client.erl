@@ -21,6 +21,7 @@ loopClient(ClientID, brokerAddr, brokerAddrBck) ->
                     receive confirmedOrder -> io:format("Order received ~n")
                     end
                     ;
+                    
     {statusOrder, OrderID} ->   brokerAddr ! { queryOrder, self(), ClientID, OrderID },
                                 receive
                                     orderNotPresent -> io:format("Order not present in broker ~n") ;
