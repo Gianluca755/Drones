@@ -2,8 +2,8 @@ manager.erl
 
 pick_rand OK
 mapLookup OK
-
-create_drone_list
+create_drone_list_aux OK
+create_drone_list OK
 
     Empty = ets:new(tableE, [ordered_set]). One = ets:new(tableO, [ordered_set]).
     Two = ets:new(tableTw, [ordered_set]). Three = ets:new(tableTr, [ordered_set]).
@@ -17,4 +17,6 @@ create_drone_list
     manager:create_drone_list(Empty). manager:create_drone_list(One).
     manager:create_drone_list(Two). manager:create_drone_list(Three).
     manager:create_drone_list(More).
+-------------------------------------------------------------
+
 

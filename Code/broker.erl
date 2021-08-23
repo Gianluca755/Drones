@@ -2,8 +2,8 @@
 -export([start/2]).
 
 % private
--export([startPrimary/2, loopPrimary/2, startBck/3, loopBackup/3]).
--export([handlerOrderPrimary/2, handlerOrderBck/3]).
+%-export([startPrimary/2, loopPrimary/2, startBck/3, loopBackup/3]).
+%-export([handlerOrderPrimary/2, handlerOrderBck/3]).
 
 -record(addr, { primaryBrokerAddr = 0,
                 bckBrokerAddr = 0,
@@ -168,8 +168,8 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
 
 respondQuery(Pid, OrderTable, ClientID, OrderID) ->
     case ets:lookup(OrderTable, {ClientID, OrderID}) of
-        false -> Pid ! orderNotPresent;
-        {_, _, _, Status} -> Pid ! Status
+        []               -> Pid ! orderNotPresent;
+        [{_Key, {_Source, _Destination, _Weight, Status} }] -> Pid ! Status
     end
 .
 

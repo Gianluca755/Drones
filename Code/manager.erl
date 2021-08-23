@@ -3,8 +3,8 @@
 -export([start/0]).
 
 
--export([startPrimary/2, loopPrimary/4, startBck/3, loopBackup/4]).
--export([handlerOrderPrimary/3, handlerOrderBck/4, handlerJoinNetworkPrimary/2, handlerJoinNetworkBck/3]).
+%-export([startPrimary/2, loopPrimary/4, startBck/3, loopBackup/4]).
+%-export([handlerOrderPrimary/3, handlerOrderBck/4, handlerJoinNetworkPrimary/2, handlerJoinNetworkBck/3]).
 
 -record(addr, { primaryBrokerAddr = 0,
                 bckBrokerAddr = 0,
