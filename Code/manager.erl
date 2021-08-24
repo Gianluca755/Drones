@@ -256,7 +256,7 @@ handlerOrderBck(OrderTable, AddrRecord, DroneTable, PrimaryHandlerAddr) ->
     if
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
-            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, 0, saved} } ),
+            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, 0,0, saved} } ),
             PrimaryHandlerAddr ! confirmedBck,
 
             receive DroneID -> true
@@ -394,7 +394,7 @@ orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr, AddrRecord)
 
 assignDroneToOrder(OrderTable, Key, DroneID) ->
 
-    [{ _Key, {Source, Destination, Weight, _DefoultDroneID, Time, Status} }] = ets:lookup(OrderTable, Key),
+    [{ _Key, {Source, Destination, Weight, _DefaultDroneID, Time, Status} }] = ets:lookup(OrderTable, Key),
     Result = ets:insert(OrderTable, {Key, {Source, Destination, Weight, DroneID, Time, Status} } ), % overwrite
     if
         Result == false ->
@@ -403,15 +403,18 @@ assignDroneToOrder(OrderTable, Key, DroneID) ->
     end
 .
 
+
+
 updateTableStatus(Table, Key, NewStatus) ->
-    [{ _Key, {Source, Destination, Weight, DroneID, Time, _Status} }] = ets:lookup(Table, Key),
-    Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, Time, NewStatus} } ), % overwrite
+   		[{ _Key, {Source, Destination, Weight, DroneID, Time, _Status} }] = ets:lookup(Table, Key),
+        Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, Time, NewStatus} } ), % overwrite
     if
-        Result == false ->
+        Result == false -> 
             io:format("Error failed attempt to update the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }]);
         true -> ok
     end
 .
+
 
 updateTableTime(Table, Key, NewTime) ->
     [{ _Key, {Source, Destination, Weight, DroneID, _Time, Status} }] = ets:lookup(Table, Key),

@@ -156,7 +156,7 @@ handlerOrderPrimary(OrderTable, AddrRecord) ->
     if
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
-            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } ),
+            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight,0,0, saved} } ),
             ClientAddress ! confirmedOrder , % send ack to the client
             AddrRecord#addr.primaryManagerAddr ! Msg  % send order to the manager
             ;
@@ -174,7 +174,7 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
     if
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
-            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } ) ;
+            ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight,0,0, saved} } ) ;
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
     end,
 
@@ -187,14 +187,14 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
 respondQuery(Pid, OrderTable, ClientID, OrderID) ->
     case ets:lookup(OrderTable, {ClientID, OrderID}) of
         []               -> Pid ! orderNotPresent;
-        [{_Key, {_Source, _Destination, _Weight, Status} }] -> Pid ! Status
+        [{_Key, {_Source, _Destination, _Weight, DefaultDroneID, Time, Status} }] -> Pid ! Status
     end
 .
 
 updateTableStatus(Table, Key, NewStatus) ->
-
-    [{_Key, {Source, Destination, Weight, _Status}}] = ets:lookup(Table, Key),
-    Result = ets:insert(Table, {Key, {Source, Destination, Weight, NewStatus} } ), % overwrite
+	io:format("Error failed attempt to modify the order table in broker. ~w~n", ets:lookup(Table, Key)),
+    [{_Key, {Source, Destination, Weight, DefaultDroneID,Time, _Status}}] = ets:lookup(Table, Key),
+    Result = ets:insert(Table, {Key, {Source, Destination, Weight, DefaultDroneID, Time ,NewStatus} } ), % overwrite
     if
         Result == false ->
 			io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }]);
