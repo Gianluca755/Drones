@@ -119,7 +119,6 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
                 %% ping msg case
                 {Sender, pingResponse} when Sender == AddrRecord#addr.primaryBrokerAddr ->
                     % if the primary responded
-
                     utils:sendPingLater(self(), AddrRecord#addr.primaryBrokerAddr), % send ping after 200 ms
                     CurrentPingTime = 200 + erlang:system_time(milli_seconds),
 
@@ -193,12 +192,13 @@ respondQuery(Pid, OrderTable, ClientID, OrderID) ->
 .
 
 updateTableStatus(Table, Key, NewStatus) ->
-    [{ _Key, {Source, Destination, Weight, _Status} }] = ets:lookup(Table, Key),
+
+    [{_Key, {Source, Destination, Weight, _Status}}] = ets:lookup(Table, Key),
     Result = ets:insert(Table, {Key, {Source, Destination, Weight, NewStatus} } ), % overwrite
     if
         Result == false ->
-            io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }]) ;
-        true -> ok
-    end
+			io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }]);
+    	true -> true
+	end
 .
 
