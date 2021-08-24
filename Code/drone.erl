@@ -7,12 +7,13 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([drone_Loop_init/3]).
+-export([start/3]).
+-export([connect_to_drones/5,requestNewDrone/6,checkNeighbour/5,drone_Loop/4]).
 
 
-drone_Loop_init(Manager_Server_Addr, DroneID, SupportedWeight) ->
-    Manager_Server_Addr ! { joinRequest, DroneID, self() },
-	drone_Loop(Manager_Server_Addr, DroneID, [], SupportedWeight)
+start(Manager_Server_Addr, DroneID, SupportedWeight) ->
+    Manager_Server_Addr ! { joinRequest, DroneID, self()},
+	spawn(drone, drone_Loop, [Manager_Server_Addr, DroneID, [], SupportedWeight])
 .
 
 
@@ -23,11 +24,12 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % Ne
 		% receive the drone list to connect to, form manager
 		{dronesList, DronesList} ->
 			 NewNeighbourList = connect_to_drones(DronesList, [], DroneID, self(), Manager_Server_Addr),
+			 
 			 drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight);
 
 		% receive a request for connection from another drone
 		{connection, NeighbourDroneAddr} ->
-			NeighbourDroneAddr ! confirmConnection,
+			NeighbourDroneAddr ! confirmConnection,	
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight );
 
 		% receive a drone status query from manager
@@ -36,7 +38,8 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % Ne
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		{electionFailed} ->
-			NeighbourList = checkNeighbour(NeighbourList, [], DroneID, self(), Manager_Server_Addr)
+			NewNeighbourList = checkNeighbour(NeighbourList, [], DroneID, self(), Manager_Server_Addr),
+			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight)
 
 	end,
 	drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight)
