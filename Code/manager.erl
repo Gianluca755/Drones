@@ -218,7 +218,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
                                 assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
                                 % we assume the drone is alive, the manager will ping it after a certaint amount of time
                                 DroneAddr ! Msg;
-            true -> io:format("no drones~n"), silentError
+            true -> io:format("Warning: no drones connected~n"), silentError
             end,
 
             % in both cases, send confirmation to the broker, it means that the order has been saved
