@@ -20,7 +20,7 @@ create_drone_list OK
 -------------------------------------------------------------
 
 Partial
-c(manager). c(broker). c(client).
+c(manager, [debug_info]). c(broker, [debug_info]). c(client, [debug_info]).
 manager:start().
 
 

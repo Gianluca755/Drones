@@ -13,16 +13,14 @@
 
 % Key and value of an Order
 % {ClientID, OrderID} {Source, Destination, Weight, Status}
-% Status ::= savedNotSent,      saved,      inProgress,    inDelivery,    delivered.
-% bck Status ::= savedNotSent,       saved,         inProgress,    inDelivery,    delivered.
+% Status ::=     saved,      inProgress,    inDelivery,    delivered.
+% bck Status ::=       saved,         inProgress,    inDelivery,    delivered.
 
 % normal init
 start(PrimaryManagerAddr, BckManagerAddr) ->
 
     Primary = spawn(broker, startPrimary, [PrimaryManagerAddr, BckManagerAddr]),
-    Bck = spawn(broker, startBck, [Primary, PrimaryManagerAddr, BckManagerAddr]),
-    io:format("Primary broker: ~w~n", [Primary]),
-    io:format("Backup broker: ~w~n", [Bck])
+    Bck = spawn(broker, startBck, [Primary, PrimaryManagerAddr, BckManagerAddr])
 .
 
 startPrimary(PrimaryManagerAddr, BckManagerAddr) ->
@@ -43,6 +41,7 @@ startPrimary(PrimaryManagerAddr, BckManagerAddr) ->
                         bckManagerAddr = BckManagerAddr},
 
     OrderTable = ets:new(myTable1, [ordered_set, public]),
+    io:format("Primary broker: ~w~n", [self()]),
     io:format("Primary broker init completed ~n"),
 
     loopPrimary(OrderTable, AddrRecord)
@@ -67,6 +66,7 @@ startBck(Primary, PrimaryManagerAddr, BckManagerAddr) ->
     AddrRecord#addr.primaryBrokerAddr ! ping, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),
 
+    io:format("Backup broker: ~w~n", [self()]),
     io:format("Backup broker init completed ~n"),
 
     loopBackup(OrderTable, AddrRecord, FirstPingTime)
@@ -161,6 +161,7 @@ handlerOrderPrimary(OrderTable, AddrRecord) ->
 
 
 handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
+    io:format("~w~n", [ets:info(OrderTable)]), io:put_chars(<<>>),
     PrimaryHandlerAddr ! {bindAdderess, self()},
 
     receive { Type, _ClientAddress, ClientID, OrderID, Description }

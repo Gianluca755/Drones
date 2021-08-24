@@ -91,7 +91,7 @@ requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, Ma
 	    Counter > 0 ->
 	        ManagerAddr ! {requestDroneAddr, MyDroneID, MyDroneAddr},
 		    receive
-			    {newDrone, NewDroneID, NewDroneAddr} ->
+			    {newDrone, _NewDroneID, NewDroneAddr} ->
 			        case lists:member( NewDroneAddr, DronesList ++ DronesAlreadyConnectedTo) of
 			        true -> requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter-1);
 			        false -> NewDroneAddr
