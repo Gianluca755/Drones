@@ -20,9 +20,13 @@ create_drone_list OK
 -------------------------------------------------------------
 
 Partial
-c(manager, [debug_info]). c(broker, [debug_info]). c(client, [debug_info]).
-manager:start().
+    c(manager, [debug_info]). c(broker, [debug_info]). c(client, [debug_info]). c(utils).
+    manager:start().
 
 
 Order not present in broker OK
 makeOrder CRASH
+
+
+
+ping system OK

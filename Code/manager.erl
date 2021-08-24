@@ -78,7 +78,7 @@ startBck(Primary) ->
     OrderTable = ets:new(myTable, [ordered_set, public]),
     DroneTable = ets:new(droneTable, [ordered_set, public]),
 
-    AddrRecord#addr.primaryManagerAddr ! ping, % send first ping
+    AddrRecord#addr.primaryManagerAddr ! {self(), ping}, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),
 
     io:format("Bck manager init completed ~n"),
@@ -164,12 +164,14 @@ loopBackup(OrderTable, AddrRecord, DroneTable, LastPingTime) ->
 
                     loopBackup(OrderTable, AddrRecord, DroneTable, CurrentPingTime);
 
-                %% other cases
+                %% handler request from primary
                 {newHandler, Pid} -> spawn(manager, handlerOrderBck, [OrderTable, AddrRecord, DroneTable, Pid]) ;
                 {newHandlerTime, Pid} -> spawn(manager, handlerUpdateTimeOrderBck, [OrderTable, AddrRecord, Pid]) ;
                 {newHandlerJoinNetwork, Pid} -> spawn(manager, handlerJoinNetworkBck, [AddrRecord, DroneTable, Pid])
 
-            end;
+            end,
+            loopBackup(OrderTable, AddrRecord, DroneTable, LastPingTime) % exits for the previous cases
+            ;
 
         true -> io:format("Primary manager not responding: ~w~n", [self()]) % primary not responding
     end

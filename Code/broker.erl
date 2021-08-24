@@ -63,7 +63,7 @@ startBck(Primary, PrimaryManagerAddr, BckManagerAddr) ->
 
     OrderTable = ets:new(myTable2, [ordered_set, public]),
 
-    AddrRecord#addr.primaryBrokerAddr ! ping, % send first ping
+    AddrRecord#addr.primaryBrokerAddr ! {self(), ping}, % send first ping
     FirstPingTime = erlang:system_time(milli_seconds),
 
     io:format("Backup broker: ~w~n", [self()]),
@@ -110,8 +110,11 @@ loopPrimary(OrderTable, AddrRecord) ->
 
 loopBackup(OrderTable, AddrRecord, LastPingTime) ->
     Time = erlang:system_time(milli_seconds),
+
+%    io:format("last ping: ~w, time: ~w ~n", [LastPingTime, Time]),
     if
         Time - LastPingTime < 2000  ->
+
             receive
                 %% ping msg case
                 {Sender, pingResponse} when Sender == AddrRecord#addr.primaryBrokerAddr ->
@@ -123,7 +126,8 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
                     loopBackup(OrderTable, AddrRecord, CurrentPingTime);
 
                 %% other cases
-                {newHandler, Pid} -> spawn(broker, handlerOrderBck, [OrderTable, AddrRecord, Pid])
+                {newHandler, Pid} -> spawn(broker, handlerOrderBck, [OrderTable, AddrRecord, Pid]),
+                                     loopBackup(OrderTable, AddrRecord, LastPingTime)
 
             end;
 
@@ -155,13 +159,12 @@ handlerOrderPrimary(OrderTable, AddrRecord) ->
             ClientAddress ! confirmedOrder , % send ack to the client
             AddrRecord#addr.primaryManagerAddr ! Msg  % send order to the manager
             ;
-        true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
+        true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
     end
 .
 
 
 handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
-    io:format("~w~n", [ets:info(OrderTable)]), io:put_chars(<<>>),
     PrimaryHandlerAddr ! {bindAdderess, self()},
 
     receive { Type, _ClientAddress, ClientID, OrderID, Description }
@@ -171,12 +174,14 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
         Type == makeOrder ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight, saved} } ) ;
-        true -> utils:updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
+        true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
     end,
 
     PrimaryHandlerAddr ! confirmedBck
 .
 
+
+%%% utils %%%
 
 respondQuery(Pid, OrderTable, ClientID, OrderID) ->
     case ets:lookup(OrderTable, {ClientID, OrderID}) of
@@ -185,5 +190,12 @@ respondQuery(Pid, OrderTable, ClientID, OrderID) ->
     end
 .
 
-
+updateTableStatus(Table, Key, NewStatus) ->
+    {Source, Destination, Weight, _Status} = ets:lookup(Table, Key),
+    Result = ets:insert(Table, {Key, {Source, Destination, Weight, NewStatus} } ), % overwrite
+    if
+        Result == false ->
+            io:format("Error failed attempt to modify the order table in broker. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
+    end
+.
 
