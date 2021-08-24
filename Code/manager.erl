@@ -3,10 +3,7 @@
 -export([start/0]).
 
 % private
--export([startPrimary/0, loopPrimary/4, startBck/1, loopBackup/4]).
--export([handlerOrderPrimary/3, handlerOrderBck/4, handlerJoinNetworkPrimary/2, handlerJoinNetworkBck/3]).
--export([handlerNewDroneRequest/3, handlerUpdateTimeOrderPrimary/4, handlerUpdateTimeOrderBck/3]).
--export([orderStatusChecker/5, updateTableTime/3]).
+-compile(export_all).
 
 -record(addr, { primaryBrokerAddr = 0,
                 bckBrokerAddr = 0,
@@ -209,19 +206,22 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
 
 
             % select random drone
-            {DroneID, DroneAddr} = pick_rand(DroneTable),
+            Candidate = pick_rand(DroneTable),
 
-            PidBckHandler ! DroneID, % send drone choice to the backup
-            receive confirmedBck -> true
+            if
+            Candidate /= 0 ->   {DroneID, DroneAddr} = Candidate,
+                                PidBckHandler ! DroneID, % send drone choice to the backup
+                                receive confirmedBck -> true
+                                end,
+
+                                % update table drone
+                                assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
+                                % we assume the drone is alive, the manager will ping it after a certaint amount of time
+                                DroneAddr ! Msg;
+            true -> io:format("no drones~n"), silentError
             end,
 
-            % update table drone
-            assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
-
-            DroneAddr ! Msg, % we assume the drone is alive, the manager will ping it after a certaint amount of time
-
-
-            % send confirmation to the broker, it means that the order has been saved
+            % in both cases, send confirmation to the broker, it means that the order has been saved
             AddrRecord#addr.primaryBrokerAddr !
             {   inProgress,
                 {},
@@ -398,7 +398,8 @@ assignDroneToOrder(OrderTable, Key, DroneID) ->
     Result = ets:insert(OrderTable, {Key, {Source, Destination, Weight, DroneID, Time, Status} } ), % overwrite
     if
         Result == false ->
-            io:format("Error failed attempt to modify the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, DroneID} }])
+            io:format("Error failed attempt to modify the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, DroneID} }]);
+        true -> ok
     end
 .
 
@@ -407,7 +408,8 @@ updateTableStatus(Table, Key, NewStatus) ->
     Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, Time, NewStatus} } ), % overwrite
     if
         Result == false ->
-            io:format("Error failed attempt to update the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }])
+            io:format("Error failed attempt to update the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }]);
+        true -> ok
     end
 .
 
@@ -417,7 +419,8 @@ updateTableTime(Table, Key, NewTime) ->
 
     if
         Result == false ->
-            io:format("Error failed attempt to update time the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, Status} }])
+            io:format("Error failed attempt to update time the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, Status} }]);
+        true -> ok
     end
 .
 
@@ -426,8 +429,11 @@ updateTableTime(Table, Key, NewTime) ->
 % returns a single element of the table (for drone selection in join and election)
 pick_rand(Table) ->
     Size = ets:info(Table, size),
-    Rand = rand:uniform(Size),
-    pick_rand(Table, Rand)
+    if
+    Size == 0 -> 0 ;
+    true      ->    Rand = rand:uniform(Size),
+                    pick_rand(Table, Rand)
+    end
 .
 
 pick_rand(Table, N) ->

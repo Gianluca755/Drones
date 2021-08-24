@@ -104,9 +104,9 @@ Note: the criterion used for the decision of the node is based on distances inst
 
 \section{Test cases}
 
-To test our system we'll use a program that simulates the environment and spawns clients in random positions and with random requests, each entity in our system will run on a different virtual machine to better simulate the distributed aspects of our system.
+To test our system we'll use a program that simulates the environment and spawns drones in random positions and with random requests.
 
-The test cases that have been analysed are listed below:\\
+The test cases that will be analysed are listed below:\\
 
 Normal conditions:
 \begin{itemize}
@@ -143,7 +143,7 @@ The schedule for how you plan to carry our your design and implementation is as 
 %In this chapter, we describe in detail functional and non-functional requirements of a solution for the problem.
 
 \section{Functional requirements}
-
+\label{func-req}
 %Which functions must be offered to users / other programs?  Which are the input data and the output data? Which is the expected effect?
 
 The following are the functional requirements required by the project:
@@ -199,7 +199,7 @@ The following are the functional requirements required by the project:
 \end{itemize}
 
 \section{Non-functional requirements}
-
+\label{nfunc-req}
 %Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
 %Are there execution time bounds? Minimum data rates?
 %If requested, specific platforms/languages/middlewares requirements for the implementation can be decided here. (E.g.: if the project is on a SOA, we may request that functions are offered via SOAP or RESTful services).
@@ -422,6 +422,8 @@ Details about the implementation: every choice about platforms, languages, softw
 
 
 Important choices about implementation should be described here; e.g., peculiar data structures.
+
+Currently the replication of the server function only as a backup there is no automatic takeover.
 \section{Erlang Term Storage (ETS)}
 The storage of data relative to orders in the broker server and, drones and order in the manager server is done through the "Erlang Term Storage" (ETS) for the development mode with the purpose of preventing SSD consumption. In production the function calls should be substituted with the "Disk Erlang Term Storage" (DETS), an other option which require small changes is to use the Mnesia: the database included in Erlang, or some other database. In the development mode we choose the AVL tree as the data structure used by ETS over the hash table, without particular justification.
 
@@ -439,8 +441,10 @@ The system is according to the transparencies declared in the section \ref{Syste
 \end{itemize}
 
 \section{Validation of the requirements}
+
 \subsection{Functional requirements}
-The system that we have developed satisfies the functional requirements defined in section \ref{Functional requirements}.
+The system that we have developed has been tested against the functional requirements defined in section \ref{func-req}.
+
 \begin{itemize}
 \item \textbf{Make a delivery request};
 \item \textbf{Request the status of a delivery};
@@ -451,7 +455,7 @@ The system that we have developed satisfies the functional requirements defined 
 \end{itemize}
 
 \subsection{Non-functional requirements}
-The system that we have developed satisfies the functional requirements defined in section \ref{Non-functional requirements}.
+The system that we have developed satisfies the functional requirements defined in section \ref{nfunc-req}.
 
 
 
