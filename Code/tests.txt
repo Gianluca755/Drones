@@ -21,12 +21,13 @@ create_drone_list OK
 
 Partial
     c(manager, [debug_info]). c(broker, [debug_info]). c(client, [debug_info]). c(utils).
+    debugger:start().
     manager:start().
 
 
 Order not present in broker OK
-makeOrder CRASH
+makeOrder Maybe
 
 
 
-ping system OK
+ping system OK, when primary stops there is an alert

@@ -52,8 +52,8 @@ startBck(Primary, PrimaryManagerAddr, BckManagerAddr) ->
     % register bck to primaryBrokerAddr
     Primary ! {self(), addrInit},
 
-    PrimaryManagerAddr ! {primaryBrokerAddr, self()},
-    BckManagerAddr ! {primaryBrokerAddr, self()},
+    PrimaryManagerAddr ! {bckBrokerAddr, self()},
+    BckManagerAddr ! {bckBrokerAddr, self()},
 
     % init data structures
     AddrRecord = #addr{ primaryBrokerAddr = Primary,
@@ -129,9 +129,11 @@ loopBackup(OrderTable, AddrRecord, LastPingTime) ->
                 {newHandler, Pid} -> spawn(broker, handlerOrderBck, [OrderTable, AddrRecord, Pid]),
                                      loopBackup(OrderTable, AddrRecord, LastPingTime)
 
+            after 2000 -> io:format("Primary broker not responding: ~w~n", [self()])
+
             end;
 
-        true -> io:format("Primary broker not responding: ~w~n", [self()]) % primary not responding
+        true -> io:format("Primary broker not responding: ~w~n", [self()])
     end
 .
 

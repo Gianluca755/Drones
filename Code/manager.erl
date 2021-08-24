@@ -169,11 +169,13 @@ loopBackup(OrderTable, AddrRecord, DroneTable, LastPingTime) ->
                 {newHandlerTime, Pid} -> spawn(manager, handlerUpdateTimeOrderBck, [OrderTable, AddrRecord, Pid]) ;
                 {newHandlerJoinNetwork, Pid} -> spawn(manager, handlerJoinNetworkBck, [AddrRecord, DroneTable, Pid])
 
+            after 2000 -> io:format("Primary manager not responding: ~w~n", [self()])
+
             end,
             loopBackup(OrderTable, AddrRecord, DroneTable, LastPingTime) % exits for the previous cases
             ;
 
-        true -> io:format("Primary manager not responding: ~w~n", [self()]) % primary not responding
+        true -> io:format("Primary manager not responding: ~w~n", [self()])
     end
 .
 
