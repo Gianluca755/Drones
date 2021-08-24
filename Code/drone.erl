@@ -39,8 +39,12 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % Ne
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		{electionFailed} ->
 			NewNeighbourList = checkNeighbour(NeighbourList, [], DroneID, self(), Manager_Server_Addr),
-			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight)
-
+			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight);
+		
+		{ makeOrder, _PidClient, ClientID, OrderID, Description }= Msg->
+			InitElection = spawn(drone, initElection, [self(), NeighbourList]),
+			InitElection! Msg,
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight)
 	end
 .
 
