@@ -64,10 +64,9 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			{D1,D2}= RecStation, 
 			{S1,S2}= DronePosition,
 			Wait=(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 )) + 100 ), % 100 standard time the drone spends at the recharging station to fully recharge
-			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, recharging, Wait, RecStation, 0, 0);
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, recharging, Wait, RecStation, 0, 0)
 		
-		{ election, ElectionAddr, ClientID, OrderID, {Source, Destination, Weight} }->
-			ElectionAddr!msg
+		
 	
 	end
 .
@@ -75,8 +74,10 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus, Wait, Dest, ClientID, OrderID)->
 	receive
 		{droneStatus, Manager_Server_Addr} ->
-			Manager_Server_Addr ! {droneStatus, self(), DroneID, DroneStatus},
-			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus,Wait, Dest, ClientID, OrderID) 
+			Manager_Server_Addr ! {droneStatus, self(), DroneID, DroneStatus};
+			
+		{ election, ElectionAddr, ClientID, OrderID, {Source, Destination, Weight} }->
+			ElectionAddr!msg
 	end,
 	timer:sleep(Wait),
 	case DroneStatus of
