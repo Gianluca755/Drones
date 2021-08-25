@@ -53,29 +53,34 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus);
 		
 		{elected, ClientID, OrderID, Source, Destination }->
+			Manager_Server_Addr ! {inDelivery, pid, ClientID, OrderID, description},
 			{D1,D2}= Destination, 
 			{S1,S2}= Source,
 			Wait=(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 ))),
-			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, delivering, Wait, Destination);
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, inDelivery, Wait, Destination, ClientID, OrderID);
 		
 		{lowBattery}->	
 			RecStation=election:findNearestRechargingStation(DronePosition, RechargingStations),
 			{D1,D2}= RecStation, 
 			{S1,S2}= DronePosition,
 			Wait=(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 )) + 100 ), % 100 standard time the drone spends at the recharging station to fully recharge
-			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, recharging, Wait, RecStation)
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, recharging, Wait, RecStation, 0, 0);
+		
+		{ election, ElectionAddr, ClientID, OrderID, {Source, Destination, Weight} }->
+			ElectionAddr!msg
+	
 	end
 .
 
-drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus, Wait, Dest)->
+drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus, Wait, Dest, ClientID, OrderID)->
 	receive
 		{droneStatus, Manager_Server_Addr} ->
 			Manager_Server_Addr ! {droneStatus, self(), DroneID, DroneStatus},
-			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus,Wait, Dest) 
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus,Wait, Dest, ClientID, OrderID) 
 	end,
 	timer:sleep(Wait),
 	case DroneStatus of
-		delivering -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, Dest, DroneBattery-round((Wait/10)), RechargingStations, idle);
+		inDelivery -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, Dest, DroneBattery-round((Wait/10)), RechargingStations, idle), Manager_Server_Addr!{delivered,0, ClientID, OrderID, 0 };
 		recharging -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, Dest, 100, RechargingStations, idle)
 	end
 .
