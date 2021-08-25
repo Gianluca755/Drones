@@ -3,6 +3,8 @@
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
+\renewcommand{\labelenumii}{\arabic{enumi}.\arabic{enumii}} % for multilevel list
+
 \title{Report for the Project of Distributed Systems}
 
 \author{Ermacora Gianluca 132923\\ Rovere Andrea 128074}
@@ -445,14 +447,24 @@ The system is according to the transparencies declared in the section \ref{Syste
 \subsection{Functional requirements}
 The system that we have developed has been tested against the functional requirements defined in section \ref{func-req}.
 
-\begin{itemize}
-\item \textbf{Make a delivery request};
-\item \textbf{Request the status of a delivery};
-\item \textbf{Support for a crashed drone while it is idle};
-\item \textbf{Support for a crashed drone after it has been elected};
-\item \textbf{A new drone joins the network};
-\item \textbf{Election of a drone to carry out a task};
-\end{itemize}
+\begin{enumerate}
+\item \textbf{Request the status of a delivery}:
+	\begin{enumerate}
+	\item the client request the broker the state of a non existing delivery;
+	\item the other cases are tested below.
+	\end{enumerate}
+
+\item \textbf{Make a delivery request}:
+	\begin{enumerate}
+	\item when there are no drones, the client makes an order and wait for confirmation, after a certain time it will also ask the broker for the status of the order;
+	\item when there are online drones, the client makes an order and wait for confirmation, after a certain time it will also ask the broker for the status of the order.
+	\end{enumerate}
+
+\item \textbf{Support for a crashed drone while it is idle}:
+\item \textbf{Support for a crashed drone after it has been elected}:
+\item \textbf{A new drone joins the network}:
+\item \textbf{Election of a drone to carry out a task}:
+\end{enumerate}
 
 \subsection{Non-functional requirements}
 The system that we have developed satisfies the functional requirements defined in section \ref{nfunc-req}.
