@@ -1,25 +1,8 @@
 order of creations:
 managers
 brokers
-drones
-clients
+drones clients
 
 
-
-
-
-
-Msg Format drones
-
-
-
-
-Drone table in manager
-ID, Pid
-
-Order table in manager
-{ClientID, OrderID}, {Source, Destination, Weight, Drone, saved}
-
-{ClientID, OrderID}, {Source, Destination, Weight, Drone, saved}
 
 

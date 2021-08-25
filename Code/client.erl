@@ -27,21 +27,22 @@ loopClient(ClientID, BrokerAddr, BckBrokerAddr, CounterOrder) ->
                     receive confirmedOrder -> io:format("Order accepted by broker ~n")
                     end,
 
-                    loopClient(ClientID, BrokerAddr, BckBrokerAddr, CounterOrder+1)
+                    loopClient(ClientID, BrokerAddr, BckBrokerAddr, CounterOrder +1) % different exit
                     ;
 
     {statusOrder, OrderID} ->   BrokerAddr ! { queryOrder, self(), ClientID, OrderID },
                                 receive
                                     orderNotPresent -> io:format("Order not present in broker ~n") ;
                                     Status -> io:format("The status of the order is: ~w~n", [Status])
-                                end
+                                end ;
+
+    infinityOrder ->    timer:sleep(100),
+                        self() ! makeOrder,
+                        self() ! infinityOrder
     end,
 
     loopClient(ClientID, BrokerAddr, BckBrokerAddr, CounterOrder)
 .
-
-
-
 
 
 

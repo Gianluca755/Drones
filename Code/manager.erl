@@ -409,7 +409,7 @@ updateTableStatus(Table, Key, NewStatus) ->
    		[{ _Key, {Source, Destination, Weight, DroneID, Time, _Status} }] = ets:lookup(Table, Key),
         Result = ets:insert(Table, {Key, {Source, Destination, Weight, DroneID, Time, NewStatus} } ), % overwrite
     if
-        Result == false -> 
+        Result == false ->
             io:format("Error failed attempt to update the order table in manager. ~w~n", [{Key, {Source, Destination, Weight, NewStatus} }]);
         true -> ok
     end
@@ -475,7 +475,7 @@ create_drone_list(DroneTable) ->
 
 % take key list return Value list
 mapLookup(Table, KeyList) ->
-    io:format("keylist: ~w~n", [KeyList]),
+    % io:format("keylist: ~w~n", [KeyList]),
     case KeyList of
     []      ->  [];
     [X|Xs]  ->  [{_Key, Value}] = ets:lookup(Table, X), % extract the value
