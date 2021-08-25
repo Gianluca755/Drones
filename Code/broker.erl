@@ -192,7 +192,7 @@ respondQuery(Pid, OrderTable, ClientID, OrderID) ->
 .
 
 updateTableStatus(Table, Key, NewStatus) ->
-	io:format("Error failed attempt to modify the order table in broker. ~w~n", ets:lookup(Table, Key)),
+	
     [{_Key, {Source, Destination, Weight, DefaultDroneID,Time, _Status}}] = ets:lookup(Table, Key),
     Result = ets:insert(Table, {Key, {Source, Destination, Weight, DefaultDroneID, Time ,NewStatus} } ), % overwrite
     if
