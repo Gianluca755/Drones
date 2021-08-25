@@ -42,9 +42,10 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			NewNeighbourList = checkNeighbour(NeighbourList, [], DroneID, self(), Manager_Server_Addr),
 			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus);
 		
+		%initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Neighbours, RechargingStations)
 		{ makeOrder, PidClient, ClientID, OrderID, Description }= Msg->
 			io:format("~n about to start election: ~n"),
-			InitElection = spawn(drone, initElection, [self(), DroneID, NeighbourList]),
+			InitElection = spawn(election, initElection, [self(), DroneID, SupportedWeight, DronePosition, DroneBattery, NeighbourList, RechargingStations]),
 			InitElection! Msg,
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus);
 		
