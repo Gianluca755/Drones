@@ -1,34 +1,9 @@
 -module(test2).
 -compile(export_all).
 
-% c(manager). c(broker). c(client). c(utils).
+% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]).
 
-% make order but no drones
-startNoDrones() ->
-    PrimaryManagerAddr = spawn(manager, startPrimary, []),
-    BckManagerAddr = spawn(manager, startBck, [PrimaryManagerAddr]),
-
-    io:format("~nPrimary manager: ~w~n", [PrimaryManagerAddr]),
-    io:format("Backup manager: ~w~n", [BckManagerAddr]),
-
-    PrimaryBrokerAddr = spawn(broker, startPrimary, [PrimaryManagerAddr, BckManagerAddr]),
-    BckBrokerAddr = spawn(broker, startBck, [PrimaryBrokerAddr, PrimaryManagerAddr, BckManagerAddr]),
-
-    timer:sleep(200),
-    io:format("~n~n"),
-
-    PidClient = spawn(client, loopClient, [55, PrimaryBrokerAddr, BckBrokerAddr, 0]), % 55 is a random ID, 0 is the counter for orders
-    io:format("PidClient: ~w~n", [PidClient]),
-
-
-
-    PidClient ! makeOrder,
-    timer:sleep(2000),
-    PidClient ! {statusOrder, 0}, % orderID = 0 for first order
-    ok
-.
-
-% make order with some drones
+% 3 drones join the network
 startDrones() ->
     PrimaryManagerAddr = spawn(manager, startPrimary, []),
     BckManagerAddr = spawn(manager, startBck, [PrimaryManagerAddr]),
@@ -42,16 +17,30 @@ startDrones() ->
     timer:sleep(200),
     io:format("~n~n"),
 
-    PidClient = spawn(client, loopClient, [55, PrimaryBrokerAddr, BckBrokerAddr, 0]), % 55 is a random ID, 0 is the counter for orders
-    io:format("PidClient: ~w~n", [PidClient]),
 
-	Drone1= spawn(drone, start, [PrimaryManagerAddr, 1, 60]),
-	Drone2= spawn(drone, start, [PrimaryManagerAddr, 2, 50]),
-	Drone3= spawn(drone, start, [PrimaryManagerAddr, 3, 90]),
+	Drone1 = spawn(drone, drone_Loop, [PrimaryManagerAddr, 1, [], 60]), % 1 is ID, 60 is supported weight
+	PrimaryManagerAddr ! { joinRequest, 1, Drone1 },
+    io:format("Drone1: ~w~n", [Drone1]),
+    timer:sleep(200),
+
+	Drone2 = spawn(drone, drone_Loop, [PrimaryManagerAddr, 2, [], 60]), % 2 is ID, 60 is supported weight
+	PrimaryManagerAddr ! { joinRequest, 2, Drone2 },
+    io:format("Drone2: ~w~n", [Drone2]),
+    timer:sleep(200),
+
+    Drone3 = spawn(drone, drone_Loop, [PrimaryManagerAddr, 3, [], 60]), % 3 is ID, 60 is supported weight
+	PrimaryManagerAddr ! { joinRequest, 3, Drone3 },
+    io:format("Drone3: ~w~n", [Drone3]),
 
 
-    PidClient ! makeOrder,
-    timer:sleep(2000),
-    PidClient ! {statusOrder, 0}, % orderID = 0 for first order
+    timer:sleep(4000),
     ok
 .
+
+
+% other test made
+
+% - with no drones, ask one from the shell
+% - with no drones, ask joinRequest from the shell
+
+

@@ -12,24 +12,37 @@
 
 
 start(Manager_Server_Addr, DroneID, SupportedWeight) ->
-    Manager_Server_Addr ! { joinRequest, DroneID, self()},
-	spawn(drone, drone_Loop, [Manager_Server_Addr, DroneID, [], SupportedWeight])
+
+    DroneAddr = spawn(drone, drone_Loop, [Manager_Server_Addr, DroneID, [], SupportedWeight]),
+    Manager_Server_Addr ! { joinRequest, DroneID, DroneAddr }
 .
 
 
 drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % NeighbourList is only addresses
-
 	receive
 
 		% receive the drone list to connect to, form manager
-		{dronesList, DronesList} ->
+		{droneList, DronesList} ->
 			 NewNeighbourList = connect_to_drones(DronesList, [], DroneID, self(), Manager_Server_Addr),
+			 case NewNeighbourList of
+			 []     -> timer:sleep(1000), Manager_Server_Addr ! { joinRequest, DroneID, self() } ;
+			 _Other -> skip
+			 end,
+			 io:format("Drone ~w, ID ~w, List : ~w~n", [DroneID, self(), NewNeighbourList]),
 			 drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight);
 
 		% receive a request for connection from another drone
 		{connection, NeighbourDroneAddr} ->
 			NeighbourDroneAddr ! confirmConnection,
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight );
+			% avoid inserting duplicates
+			Condition = lists:member(NeighbourDroneAddr, NeighbourList),
+			if
+			Condition == false ->
+			    io:format("Drone ~w, ID ~w, List : ~w~n", [DroneID, self(), NeighbourList ++ [NeighbourDroneAddr]),
+			    drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight ) ;
+
+			Condition == true -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight )
+			end;
 
 		% receive a drone status query from manager
 		{droneStatus, Manager_Server_Addr} ->
@@ -40,8 +53,8 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % Ne
 		{electionFailed} ->
 			NewNeighbourList = checkNeighbour(NeighbourList, [], DroneID, self(), Manager_Server_Addr),
 			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight);
-		
-		{ makeOrder, _PidClient, ClientID, OrderID, Description }= Msg->
+
+		{ makeOrder, _PidClient, ClientID, OrderID, Description } = Msg->
 			io:format("~n about to start election: ~n"),
 			InitElection = spawn(drone, initElection, [self(), NeighbourList]),
 			InitElection! Msg,
@@ -49,11 +62,9 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % Ne
 	end
 .
 
-	%Manager_Server_Addr ! {inDelivery, self(), ClientID, OrderID, {}},
-	%Manager_Server_Addr ! {delivered, {}, ClientID, OrderID, {}}
-
-
-	%Drone_Addr ! {election, self(), ClientID, OrderID, {Source, Destination, Weight}}
+%% ====================================================================
+%% Internal functions
+%% ====================================================================
 
 
 % take a list of drones to connect to, in case of failure ask for new drone addresses to the manager
@@ -61,14 +72,19 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % Ne
 connect_to_drones(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr)->
     case DronesList of
         []     ->   DronesAlreadyConnectedTo ;
-        [X|Xs] ->   X ! {connection, MyDroneAddr},
+        [X|Xs] ->
+            if
+            % avoid self connection
+            X == MyDroneAddr -> connect_to_drones(Xs, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr) ;
+
+            true -> X ! {connection, MyDroneAddr},
 
                     % receive confirmation from the other drone
                     receive confirmConnection -> NewDrone = X
                     after % in case of timeout consider the drone dead and send a request to the manager for a single new drone
 				    2000 -> NewDrone = requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, 3)
-                    % requestNewDrone() ask the manager, after the reply,
-                    % checks that the drone it's not connected to the new candidate drone or is already in the candidates.
+                    % requestNewDrone() asks the manager a single drone; after the reply,
+                    % it checks that the drone it's not connected to the new candidate drone or is already in the candidates.
                     % we also prevent the send of the faulty drone check before passing to the function DronesList inseted of Xs
                     % the manager doesn't reply with the drone that made the request, so no check of self connect attempt
                     % is needed here
@@ -83,30 +99,27 @@ connect_to_drones(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, 
 						% correct exit
 					    true -> connect_to_drones(Xs, [NewDrone | DronesAlreadyConnectedTo ], MyDroneID, MyDroneAddr, ManagerAddr)
 				    end
+			end
     end
 .
 
 
-
-
-%% ====================================================================
-%% Internal functions
-%% ====================================================================
-
-requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter)->
+% returns the new drone address or {} in case of failure. It will make "Counter" attempt.
+requestNewDrone(DronesCandidateToConnection, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter)->
 	if
-	    Counter > 0 ->
-	        ManagerAddr ! {requestDroneAddr, MyDroneID, MyDroneAddr},
-		    receive
-			    {newDrone, _NewDroneID, NewDroneAddr} ->
-			        case lists:member( NewDroneAddr, DronesList ++ DronesAlreadyConnectedTo) of
-			        true -> requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter-1);
-			        false -> NewDroneAddr
-			        end
-			after 2000 -> {}
-		    end ;
-		% in case of "Counter" failed attempt
-		Counter == 0 -> {}
+	Counter > 0 ->
+        ManagerAddr ! {requestDroneAddr, MyDroneID, MyDroneAddr},
+
+		receive {newDrone, _NewDroneID, NewDroneAddr} ->
+	    	case lists:member( NewDroneAddr, DronesCandidateToConnection ++ DronesAlreadyConnectedTo) of
+			 true -> requestNewDrone(DronesCandidateToConnection, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr, Counter-1);
+			 false -> NewDroneAddr
+			 end
+		after 2000 -> {}
+		end ;
+
+	% in case of "Counter" failed attempt
+	Counter == 0 -> {}
 	end
 .
 
@@ -114,7 +127,7 @@ requestNewDrone(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, Ma
 % take a list of Neighbour drones, in case of failure or timeout remove them, if the list becomes <=2 ask for new drones addresses to the manager
 % return the list of online and connected Neighbour drones
 
-% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
+% check that all the neighbours are alive, remove dead, if < 2 ask more to manager
 checkNeighbour(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr)->
     case NeighbourList of
 
@@ -128,7 +141,7 @@ checkNeighbour(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr)
 	   []     ->
 		   		Len = length(OnlineDrones),
 				if
-				    Len < 3 -> NewDrone= requestNewDrone(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr, 0),
+				    Len < 2 -> NewDrone= requestNewDrone(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr, 0),
 					           checkNeighbour(NeighbourList, OnlineDrones ++ [NewDrone], MyDroneID, MyDroneAddr, ManagerAddr) ;
 					true -> true
 				end

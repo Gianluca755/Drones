@@ -17,17 +17,11 @@ create_drone_list OK
     manager:create_drone_list(Empty). manager:create_drone_list(One).
     manager:create_drone_list(Two). manager:create_drone_list(Three).
     manager:create_drone_list(More).
+
+
+handlerNewDroneRequest OK
+
+
+
 -------------------------------------------------------------
 
-Partial
-    c(manager, [debug_info]). c(broker, [debug_info]). c(client, [debug_info]). c(utils).
-    debugger:start().
-    manager:start().
-
-
-Order not present in broker OK
-makeOrder Maybe
-
-
-
-ping system OK, when primary stops there is an alert

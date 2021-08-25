@@ -289,7 +289,7 @@ handlerJoinNetworkPrimary(AddrRecord, DroneTable) ->
     end,
 
     List = create_drone_list(DroneTable), % only addresses of the drones, no IDs
-    Drone_Address ! {droneList, List},
+    Drone_Address ! {droneList, List},                                 %io:format("List: ~w~n", [List]),
 
     % store it
     ets:insert( DroneTable, {DroneID, Drone_Address} )
@@ -308,16 +308,22 @@ handlerJoinNetworkBck(AddrRecord, DroneTable, PrimaryHandlerAddr) ->
     PrimaryHandlerAddr ! confirmedBck  % send confirmation
 .
 
+% respond with a new drone different from the one making the request
 % makes two attempt to select a new drone otherwise doesn't reply to the request
 handlerNewDroneRequest(DroneTable, DroneID, DroneAddr) ->
 
-	{NewDroneID, NewDroneAddr} = pick_rand(DroneTable),
-    {NewDroneID2, NewDroneAddr2} = pick_rand(DroneTable),
-
+    Size = ets:info(DroneTable, size),
     if
-    NewDroneID  /= DroneID -> DroneAddr ! {newDrone, NewDroneAddr};
-    NewDroneID2 /= DroneID -> DroneAddr ! {newDrone, NewDroneAddr2};
-    true -> true
+        Size =< 1 -> notEnoughDrones ;
+
+        true -> {NewDroneID, NewDroneAddr} = pick_rand(DroneTable),
+                {NewDroneID2, NewDroneAddr2} = pick_rand(DroneTable),
+
+                if
+                NewDroneID  /= DroneID -> DroneAddr ! {newDrone, NewDroneAddr};
+                NewDroneID2 /= DroneID -> DroneAddr ! {newDrone, NewDroneAddr2};
+                true -> probabilisticFailure
+                end
     end
 .
 

@@ -446,6 +446,7 @@ The system is according to the transparencies declared in the section \ref{Syste
 
 \subsection{Functional requirements}
 The system that we have developed has been tested against the functional requirements defined in section \ref{func-req}.
+The tests are in the folder \textsf{Tests} with one file for every top level 	entry of the list below.
 
 \begin{enumerate}
 \item \textbf{Request the status of a delivery}:
@@ -454,16 +455,23 @@ The system that we have developed has been tested against the functional require
 	\item the other cases are tested below.
 	\end{enumerate}
 
+\item \textbf{A new drone joins the network}:
+	\begin{enumerate}
+	\item the test consists in 3 drones that attempt to join the network. The behaviour is quite complex since the first drone will have no neighbours and it will make an other attempt to connect after some time. In other cases a drone needs to prevent a self connection and the duplicates, this is complicated by the fact that a drone may crash while an other drone makes a connection attempt.
+	\end{enumerate}
+
 \item \textbf{Make a delivery request}:
 	\begin{enumerate}
 	\item when there are no drones, the client makes an order and wait for confirmation, after a certain time it will also ask the broker for the status of the order;
 	\item when there are online drones, the client makes an order and wait for confirmation, after a certain time it will also ask the broker for the status of the order.
 	\end{enumerate}
 
+
+\item \textbf{Election of a drone to carry out a task}:
+
 \item \textbf{Support for a crashed drone while it is idle}:
 \item \textbf{Support for a crashed drone after it has been elected}:
-\item \textbf{A new drone joins the network}:
-\item \textbf{Election of a drone to carry out a task}:
+
 \end{enumerate}
 
 \subsection{Non-functional requirements}
