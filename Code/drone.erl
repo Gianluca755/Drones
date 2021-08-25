@@ -7,64 +7,122 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/3]).
--export([connect_to_drones/5, requestNewDrone/6, checkNeighbour/5, drone_Loop/4]).
+-export([start/5]).
+-export([connect_to_drones/5, requestNewDrone/6, checkNeighbour/5, drone_Loop/8]).
 
 
-start(Manager_Server_Addr, DroneID, SupportedWeight) ->
+start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingStations) ->
 
-    DroneAddr = spawn(drone, drone_Loop, [Manager_Server_Addr, DroneID, [], SupportedWeight]),
-    Manager_Server_Addr ! { joinRequest, DroneID, DroneAddr }
+	Pid = spawn(drone, drone_Loop,
+	            [Manager_Server_Addr, DroneID, [], SupportedWeight, DronePosition, 100, RechargingStations, idle]
+	           ),
+	Manager_Server_Addr ! { joinRequest, DroneID, Pid }
 .
 
 
-drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % NeighbourList is only addresses
+drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus) -> % NeighbourList is only addresses
+
 	receive
 
 		% receive the drone list to connect to, form manager
 		{droneList, DronesList} ->
 			 NewNeighbourList = connect_to_drones(DronesList, [], DroneID, self(), Manager_Server_Addr),
+
 			 case NewNeighbourList of
 			 []     -> timer:sleep(1000), Manager_Server_Addr ! { joinRequest, DroneID, self() } ;
 			 _Other -> skip
 			 end,
 			 io:format("Drone ~w, ID ~w, List : ~w~n", [DroneID, self(), NewNeighbourList]),
-			 drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight);
+			 drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight, DronePosition, DroneBattery,
+			            RechargingStations, DroneStatus);
+
 
 		% receive a request for connection from another drone
 		{connection, NeighbourDroneAddr} ->
 			NeighbourDroneAddr ! confirmConnection,
+
 			% avoid inserting duplicates
 			Condition = lists:member(NeighbourDroneAddr, NeighbourList),
 			if
 			Condition == false ->
 			    io:format("Drone ~w, ID ~w, List : ~w~n", [DroneID, self(), NeighbourList ++ [NeighbourDroneAddr]),
-			    drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight ) ;
+			    drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight,
+			                DronePosition, DroneBattery, RechargingStations, DroneStatus ) ;
 
-			Condition == true -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight )
+			Condition == true -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
+			                        DronePosition, DroneBattery, RechargingStations, DroneStatus)
 			end;
+
 
 		% receive a drone status query from manager
 		{droneStatus, Manager_Server_Addr} ->
-			Manager_Server_Addr ! {droneStatus, self(), DroneID},
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) ;
+			Manager_Server_Addr ! {droneStatus, self(), DroneID, DroneStatus},
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
+			            RechargingStations, DroneStatus) ;
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		{electionFailed} ->
 			NewNeighbourList = checkNeighbour(NeighbourList, [], DroneID, self(), Manager_Server_Addr),
-			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight);
 
-		{ makeOrder, _PidClient, ClientID, OrderID, Description } = Msg->
+			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight, DronePosition, DroneBattery,
+			            RechargingStations, DroneStatus);
+
+		%initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Neighbours, RechargingStations)
+		{ makeOrder, PidClient, ClientID, OrderID, Description } = Msg->
+
 			io:format("~n about to start election: ~n"),
-			InitElection = spawn(drone, initElection, [self(), NeighbourList]),
+			InitElection = spawn(election, initElection, [self(), DroneID, SupportedWeight, DronePosition, DroneBattery,
+			                         NeighbourList, RechargingStations]),
 			InitElection! Msg,
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight)
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
+			                 RechargingStations, DroneStatus);
+
+		{excessiveWeight, ClientID, OrderID}->
+			io:format("~n the package weighs too much: ~n"),
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
+			            RechargingStations, DroneStatus);
+
+		{elected, ClientID, OrderID, Source, Destination }->
+			Manager_Server_Addr ! {inDelivery, pid, ClientID, OrderID, description},
+			{D1,D2}= Destination,
+			{S1,S2}= Source,
+			Wait=(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 ))),
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
+			                RechargingStations, inDelivery, Wait, Destination, ClientID, OrderID);
+
+		{lowBattery}->
+			RecStation=election:findNearestRechargingStation(DronePosition, RechargingStations),
+			{D1,D2}= RecStation,
+			{S1,S2}= DronePosition,
+			Wait=(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 )) + 100 ), % 100 standard time the drone spends at the recharging station to fully recharge
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
+			                RechargingStations, recharging, Wait, RecStation, 0, 0)
+
+
+
 	end
 .
+
 
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+
+
+drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus, Wait, Dest, ClientID, OrderID)->
+	receive
+		{droneStatus, Manager_Server_Addr} ->
+			Manager_Server_Addr ! {droneStatus, self(), DroneID, DroneStatus};
+
+		{ election, ElectionAddr, ClientID, OrderID, {Source, Destination, Weight} }->
+			ElectionAddr!msg
+	end,
+	timer:sleep(Wait),
+	case DroneStatus of
+		inDelivery -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, Dest, DroneBattery-round((Wait/10)), RechargingStations, idle), Manager_Server_Addr!{delivered,0, ClientID, OrderID, 0 };
+		recharging -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, Dest, 100, RechargingStations, idle)
+	end
+.
 
 
 % take a list of drones to connect to, in case of failure ask for new drone addresses to the manager

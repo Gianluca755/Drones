@@ -1,7 +1,9 @@
 -module(test2).
 -compile(export_all).
 
+
 % c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]).
+
 
 % 3 drones join the network
 startDrones() ->
@@ -38,9 +40,16 @@ startDrones() ->
 .
 
 
-% other test made
 
+
+	%start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingStations)
+%	Drone1= spawn(drone, start, [PrimaryManagerAddr, 1, 60, {50, 60}, [{40, 50}]]), % 1 is the id 60 is the max carry weight
+%	Drone2= spawn(drone, start, [PrimaryManagerAddr, 2, 50, {60, 60}, [{40, 50}]]),
+%	Drone3= spawn(drone, start, [PrimaryManagerAddr, 3, 90, {50, 64}, [{40, 50}]]),
+
+
+
+% other test made
 % - with no drones, ask one from the shell
 % - with no drones, ask joinRequest from the shell
-
 
