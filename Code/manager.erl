@@ -197,6 +197,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
     % handling the order
     if
         Type == makeOrder ->
+			
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, {
                 {ClientID, OrderID},
@@ -213,11 +214,12 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
                                 PidBckHandler ! DroneID, % send drone choice to the backup
                                 receive confirmedBck -> true
                                 end,
-
+								
                                 % update table drone
                                 assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
                                 % we assume the drone is alive, the manager will ping it after a certaint amount of time
-                                DroneAddr ! Msg;
+                                
+								DroneAddr ! Msg;
             true -> io:format("Warning: no drones connected~n"), silentError
             end,
 
@@ -373,7 +375,7 @@ orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr, AddrRecord)
                 % ping drone, if fails alert
                     DroneAddr = ets:lookup(DroneTable, DroneID),
                     DroneAddr ! {droneStatus, self()},
-                    receive {droneStatus, _, _ } -> true
+                    receive {droneStatus, _, _, _ } -> true
                     after 10*1000 -> io:format("Drone offline Drone:~w, Client:~w, Order:~w, Weight:~w~n", [ DroneID, ClientID, OrderID, Weight ])
                     end ;
 

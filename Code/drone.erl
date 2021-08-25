@@ -7,55 +7,78 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/3]).
--export([connect_to_drones/5, requestNewDrone/6, checkNeighbour/5, drone_Loop/4]).
+-export([start/5]).
+-export([connect_to_drones/5, requestNewDrone/6, checkNeighbour/5, drone_Loop/8]).
 
 
-start(Manager_Server_Addr, DroneID, SupportedWeight) ->
-    Manager_Server_Addr ! { joinRequest, DroneID, self()},
-	spawn(drone, drone_Loop, [Manager_Server_Addr, DroneID, [], SupportedWeight])
+start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingStations) ->
+    
+	Pid= spawn(drone, drone_Loop, [Manager_Server_Addr, DroneID, [], SupportedWeight, DronePosition, 100, RechargingStations, idle]),
+	Manager_Server_Addr ! { joinRequest, DroneID, Pid }
 .
 
 
-drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) -> % NeighbourList is only addresses
+drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus) -> % NeighbourList is only addresses
 
 	receive
 
 		% receive the drone list to connect to, form manager
 		{dronesList, DronesList} ->
 			 NewNeighbourList = connect_to_drones(DronesList, [], DroneID, self(), Manager_Server_Addr),
-			 drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight);
+			 drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus);
 
 		% receive a request for connection from another drone
 		{connection, NeighbourDroneAddr} ->
 			NeighbourDroneAddr ! confirmConnection,
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight );
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus);
 
 		% receive a drone status query from manager
 		{droneStatus, Manager_Server_Addr} ->
-			Manager_Server_Addr ! {droneStatus, self(), DroneID},
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight) ;
+			Manager_Server_Addr ! {droneStatus, self(), DroneID, DroneStatus},
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus) ;
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		{electionFailed} ->
 			NewNeighbourList = checkNeighbour(NeighbourList, [], DroneID, self(), Manager_Server_Addr),
-			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight);
+			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus);
 		
-		{ makeOrder, _PidClient, ClientID, OrderID, Description }= Msg->
+		{ makeOrder, PidClient, ClientID, OrderID, Description }= Msg->
 			io:format("~n about to start election: ~n"),
-			InitElection = spawn(drone, initElection, [self(), NeighbourList]),
+			InitElection = spawn(drone, initElection, [self(), DroneID, NeighbourList]),
 			InitElection! Msg,
-			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight)
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus);
+		
+		{excessiveWeight, ClientID, OrderID}->
+			io:format("~n the package weighs too much: ~n"),
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus);
+		
+		{elected, ClientID, OrderID, Source, Destination }->
+			{D1,D2}= Destination, 
+			{S1,S2}= Source,
+			Wait=(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 ))),
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, delivering, Wait, Destination);
+		
+		{lowBattery}->	
+			RecStation=election:findNearestRechargingStation(DronePosition, RechargingStations),
+			{D1,D2}= RecStation, 
+			{S1,S2}= DronePosition,
+			Wait=(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 )) + 100 ), % 100 standard time the drone spends at the recharging station to fully recharge
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, recharging, Wait, RecStation)
 	end
 .
 
-	%Manager_Server_Addr ! {inDelivery, self(), ClientID, OrderID, {}},
-	%Manager_Server_Addr ! {delivered, {}, ClientID, OrderID, {}}
-
-
-	%Drone_Addr ! {election, self(), ClientID, OrderID, {Source, Destination, Weight}}
-
-
+drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus, Wait, Dest)->
+	receive
+		{droneStatus, Manager_Server_Addr} ->
+			Manager_Server_Addr ! {droneStatus, self(), DroneID, DroneStatus},
+			drone_Loop_Busy(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus,Wait, Dest) 
+	end,
+	timer:sleep(Wait),
+	case DroneStatus of
+		delivering -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, Dest, DroneBattery-round((Wait/10)), RechargingStations, idle);
+		recharging -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, Dest, 100, RechargingStations, idle)
+	end
+.
 % take a list of drones to connect to, in case of failure ask for new drone addresses to the manager
 % return the list of online and connected drones
 connect_to_drones(DronesList, DronesAlreadyConnectedTo, MyDroneID, MyDroneAddr, ManagerAddr)->
