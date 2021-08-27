@@ -93,10 +93,10 @@ nonInitElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, 
     Children = list:delete(Parent, Neighbours),
 
     Wave2 = {{ election, self(), ClientID, OrderID, {Source, Destination, Weight} }},
-	io:format("NeighNoInit~w~n", [Children]),
+	%io:format("NeighNoInit~w~n", [Children]),
     sendToAll(Wave2, Children),
     Results = receiveN(length(Children), []),
-	io:format("ResultsNoInit: ~w~n", [Results]),
+	%io:format("ResultsNoInit: ~w~n", [Results]),
     if % case where the await of the response took too much time
         Results == 'EXIT' -> DroneAddr ! electionFailed, exit("err");
         true -> true
@@ -154,7 +154,7 @@ nonInitElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, 
 sendToAll(Msg, Addresses) ->
     case Addresses of
     []      -> true;
-    [X|Xs]  ->io:format("ddddd: ~w~n", [X]), X ! Msg , sendToAll(Msg, Xs)
+    [X|Xs]  -> X ! Msg , sendToAll(Msg, Xs)
     end
 .
 
@@ -179,11 +179,11 @@ extract(Received, Stored)->
 
 
 receiveN(N, Received) ->
-	io:format("received: ~w~n",[N]),
+	
     if
         N == 0 -> Received;
         N > 0  -> receive {result, Addr, ClientID, OrderID, {Source, Destination, Weight}}= Msg -> receiveN(N-1, [Msg | Received])
-                  after (3 * 60 * 100) -> 'EXIT'
+                  after (3 * 60 * 1000) -> 'EXIT'
                   end
     end
 .
