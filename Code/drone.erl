@@ -21,7 +21,7 @@ start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingSt
 	                    [],                     % list of neighbours
 	                    SupportedWeight,
 	                    DronePosition,
-	                    BATTERY_CAPACITY,
+	                    ?BATTERY_CAPACITY,
 	                    RechargingStations,     % list of position for recharging station
 	                    idle,                   % status of the drone
 	                    0                       % counter for refused election due to low power, after 3 go to recharge station
@@ -63,7 +63,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			Condition = lists:member(NeighbourDroneAddr, NeighbourList),
 			if
 			Condition == false ->
-			    io:format("Drone ~w, ID ~w, List : ~w~n", [DroneID, self(), NeighbourList ++ [NeighbourDroneAddr]),
+			    io:format("Drone ~w, ID ~w, List : ~w~n", [DroneID, self(), NeighbourList ++ [NeighbourDroneAddr]]),
 			    drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight,
 			                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter ) ;
 
@@ -86,21 +86,21 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 		lowBattery ->
 		    if
-		    LowBatteryCounter == -1 -> true % in case the drone is already going to recharge
+		    LowBatteryCounter == -1 -> true; % in case the drone is already going to recharge
 		    LowBatteryCounter < 2 -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
 		                                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter + 1) ;
-		    true -> spawn(drone, goToRecharge, [DroneAddr, DroneBattery, DronePosition, RechargingStations]),
+		    true -> spawn(drone, goToRecharge, [self(), DroneBattery, DronePosition, RechargingStations]),
 		            drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, busy, -1) ;
+			            RechargingStations, busy, -1) 
 		    end ;
 
 
         {modifyBatteryCharge, BatteryUsed} -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
-                                NewPosition, DroneBattery - BatteryUsed, RechargingStations, DroneStatus, LowBatteryCounter ) ;
+                                DronePosition, DroneBattery - BatteryUsed, RechargingStations, DroneStatus, LowBatteryCounter ) ;
 
 
         rechargeCompleted -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
-                                NewPosition, BATTERY_CAPACITY, RechargingStations, idle, 0 ) ;
+                                DronePosition, ?BATTERY_CAPACITY, RechargingStations, idle, 0 ) ;
 
 %%%%%% messages relative to orders %%%%%%%%%%%%%
 
@@ -116,13 +116,13 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			Manager_Server_Addr ! {inDelivery, DroneID, ClientID, OrderID, {}}, % notify the manager
             spawn(drone, droneDelivery, [self(), DronePosition, Source, Destination, ClientID, OrderID]),
             drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, busy) ;
+			            RechargingStations, busy, LowBatteryCounter) ;
 
         % notify manager and free drone
         {delivered, ClientID, OrderID} ->
             spawn(drone, notifyManager, [Manager_Server_Addr, ClientID, OrderID]),
             drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, idle) ; % drone now free
+			            RechargingStations, idle, LowBatteryCounter) ; % drone now free
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		electionFailed ->
@@ -130,14 +130,13 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 
 		{excessiveWeight, ClientID, OrderID} ->
-			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]); % exit at bottom
-
+			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]) % exit at bottom
 
 	end,
 
 	% NORMAL EXIT WITHOUT STATE MODIFICATION
 	drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, DroneStatus, LowBatteryCounter) ;
+			            RechargingStations, DroneStatus, LowBatteryCounter) 
 .
 
 
@@ -178,10 +177,10 @@ goToRecharge(DroneAddr, DroneBattery, DronePosition, RechargingStations) ->
 	% since speed is 1 per second, Distance is also time to wait
     timer:sleep(Distance *1000),
     DroneAddr ! {modifyBatteryCharge, Distance}, % pass the battery level to subctract
-    DroneAddr ! {newPosition, Destination},      % notify new position
+    DroneAddr ! {newPosition, RecStation},      % notify new position
 
-    RemainingBattery = BATTERY_CAPACITY - Distance - DroneBattery,
-    timer:sleep( RemainingBattery * 1000 * RECHARGE_SPEED ),
+    RemainingBattery = ?BATTERY_CAPACITY - Distance - DroneBattery,
+    timer:sleep( RemainingBattery * 1000 * ?RECHARGE_SPEED ),
 
     DroneAddr ! rechargeCompleted
 .
