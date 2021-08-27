@@ -8,7 +8,7 @@
 % InitElection = spawn(drone, initElection, [self(), Neighbours]),
 % InitElectionElection ! Msg
 
-initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Neighbours, RechargingStations) ->
+initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, Neighbours, RechargingStations, DroneStatus) ->
 
     % receive order from main process of the drone
     receive Order -> true
@@ -17,17 +17,17 @@ initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Nei
     % decompose order
     { makeOrder, _PidClient, ClientID, OrderID, {Source, Destination, Weight} } = Order,
 
-    NewOrder = {{ election, self(), ClientID, OrderID, {Source, Destination, Weight} }},
+    NewOrder = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
     sendToAll(NewOrder, Neighbours),
 
     Results = receiveN(length(Neighbours), []),
 
-    if % case where the await of the response took too much time
+    if % in the case where the await of the response took too much time, exit with error
         Results == 'EXIT' -> DroneAddr ! electionFailed, exit("err");
         true -> true
     end,
 
-    SelectedResults = list:filter(checkResult, Results),  % select only the result messages
+    SelectedResults = list:filter(checkResult, Results),  % select only the result messages, not the election one
 
     Candidates = list:map(extractID_Addr_Distance, SelectedResults),
 
@@ -41,22 +41,25 @@ initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Nei
     DistanceToPackage = math:sqrt( math:pow( S1-P1, 2 ) + math:pow( S2-P2, 2 ) ),
 
     % calculate distance from the finishing point of the delivery to the recharging station
-    DistanceRecharging = findNearestRechargingStation( Destination, RechargingStations),
+    DistanceRecharging = findNearestRechargingStation(Destination, RechargingStations),
 
-    % make local decision
+    %% make local decision %%
 
     % {-1, 9999} is for the case when the drone can't deliver for some reason different from the weight
     % {-2, 9999} is for the case when the drone can't deliver because the package weight too much
 
     if
-        % explicit opt out from the elction
-        DroneCapacity < Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
+        DroneStatus == busy -> CompleteCandidates = Candidates ;
+
+        % explicit opt out of this drone from the election
+        SupportedWeight < Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
 
         % if the drone can trasport the package, check battery
         DroneBattery >= DistanceOfDelivery + DistanceToPackage + DistanceRecharging ->
             CompleteCandidates = [ {DroneID, self(), DistanceToPackage}| Candidates],
             % if this node can't partecepate due to low battery power, send a note the loop process of the drone
             DroneAddr ! lowBattery ;
+
         true -> CompleteCandidates = Candidates % doesn't have to explicitly opt out from the election because of the structure of localDecision (called below)
     end,
 
@@ -79,15 +82,15 @@ initElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Nei
 % non initiator receive msg flag parent, propagate msg then wait for all the replies,
 % choose the best option and send to parent, wait for decision to propagate.
 
-nonInitElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, Neighbours, RechargingStations) ->
+nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, Neighbours, RechargingStations, DroneStatus) ->
     receive Wave -> true
     end,
 
-    {{ election, Parent, ClientID, OrderID, {Source, Destination, Weight} }} = Wave, % select parent for the echo algo
+    { election, Parent, ClientID, OrderID, {Source, Destination, Weight} } = Wave, % select parent for the echo algo
 
     Children = list:delete(Parent, Neighbours),
 
-    Wave2 = {{ election, self(), ClientID, OrderID, {Source, Destination, Weight} }},
+    Wave2 = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
     sendToAll(Wave2, Children),
     Results = receiveN(length(Children), []),
 
@@ -118,8 +121,10 @@ nonInitElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, 
     % {-2, 9999} is for the case when the drone can't deliver because the package weight too much
 
     if
+        DroneStatus == busy -> CompleteCandidates = Candidates ;
+
         % explicit opt out from the elction
-        DroneCapacity < Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
+        SupportedWeight < Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
 
         % if the drone can trasport the package, check battery
         DroneBattery >= DistanceOfDelivery + DistanceToPackage + DistanceRecharging ->
@@ -136,7 +141,9 @@ nonInitElection(DroneAddr, DroneID, DroneCapacity, DronePosition, DroneBattery, 
     % push decision to parent
     Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance},
 
-    % the election decision will be communicated with direct connection, otherwise a backpropagation needs to be inserted here
+    % the election decision will be communicated with direct connection, to this handler which will send the message to
+    % the main process of the drone.
+    % Otherwise a backpropagation system needs to be inserted here
 
     receive {elected, ClientID, OrderID, Source, Destination } = MsgElection -> DroneAddr ! MsgElection % let the drone handle it
     after (3 * 60 * 1000) -> true % exit after 3m

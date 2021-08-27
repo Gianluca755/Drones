@@ -125,7 +125,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			            RechargingStations, idle) ; % drone now free
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
-		{electionFailed} ->
+		electionFailed ->
 		    spawn(drone, checkNeighbour, [NeighbourList, [], DroneID, self(), Manager_Server_Addr]); % exit at bottom
 
 
