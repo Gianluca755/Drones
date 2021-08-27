@@ -296,7 +296,8 @@ From manager to drones
 	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}".
 	This is always the original message, the random drone will start the election without notify the manager.
 
-	\item Drone status:
+	\item Drone status: "\{droneStatus, Address\}".
+	This message is used to ask information about the status of to the drone. \textit{Address} is for messaging back.
 
 	%\item Order status:
 

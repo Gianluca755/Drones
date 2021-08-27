@@ -385,7 +385,9 @@ orderStatusChecker(OrderTable, DroneTable, CurrentTime, ManagerAddr, AddrRecord)
                 % ping drone, if fails alert
                     DroneAddr = ets:lookup(DroneTable, DroneID),
                     DroneAddr ! {droneStatus, self()},
-                    receive {droneStatus, _, _, _ } -> true
+                    receive {droneStatus, Pid, DroneID, DronePosition, DroneBattery, DroneStatus} ->
+                        io:format("Drone: ~w ~nDroneAddr: ~w ~nPosition: ~w ~n Battery: ~w ~nStatus: ~w~n",
+                            [DroneID, Pid, DronePosition, DroneBattery, DroneStatus])
                     after 10*1000 -> io:format("Drone offline Drone:~w, Client:~w, Order:~w, Weight:~w~n", [ DroneID, ClientID, OrderID, Weight ])
                     end ;
 

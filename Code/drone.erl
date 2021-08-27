@@ -77,9 +77,9 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
         % receive a query from an other drone
         {queryOnline, DroneAddr} -> DroneAddr ! online ; % exit at bottom
 
-		% receive a drone status query from manager !! NEED TO EXPAND !!
+		% receive a drone status query from manager (or shell)
 		{droneStatus, Manager_Server_Addr} ->
-			Manager_Server_Addr ! {droneStatus, self(), DroneID, DroneStatus} ; % exit at bottom
+			Manager_Server_Addr ! {droneStatus, self(), DroneID, DronePosition, DroneBattery, DroneStatus} ; % exit at bottom
 
 		{newPosition, NewPosition} -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, NewPosition,
                                         DroneBattery, RechargingStations, DroneStatus , LowBatteryCounter ) ;
@@ -91,7 +91,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		                                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter + 1) ;
 		    true -> spawn(drone, goToRecharge, [self(), DroneBattery, DronePosition, RechargingStations]),
 		            drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, busy, -1) 
+			            RechargingStations, busy, -1)
 		    end ;
 
 
@@ -136,7 +136,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 	% NORMAL EXIT WITHOUT STATE MODIFICATION
 	drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, DroneStatus, LowBatteryCounter) 
+			            RechargingStations, DroneStatus, LowBatteryCounter)
 .
 
 
