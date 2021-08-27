@@ -37,7 +37,7 @@ The problem to solve is the delivery of packages and management of a dynamic fle
 
 The space is modelled by a 2D grid, so the diagonal movements of drones are calculated with some approximation. There aren't forbidden zones nor forced paths.
 
-The drones have cellular connectivity and know a few other drones. They are equipped with GPS and we assume they have an ID, it's not a limitation since the ID could be given by the manager server (see below).
+The drones have cellular connectivity and know a few other drones. They are equipped with GPS and we assume they have an ID, it's not a limitation since the ID could be given by the manager server (see below). The drones have all the same constant speed.
 
 There are some recharging and repairing stations on the map. For simplicity the recharging stations and warehouses are assumed to have unlimited capacity.
 
@@ -256,12 +256,18 @@ This approach permits an efficient use of the resources since it prevents blocki
 %Communication between components.
 
 
-\subsection{Status of the order}
+\subsection{Status of an order}
 The delivery order from the client can be in one of the following status:
 \begin{itemize}
 \item \textbf{inProgress}: an order is in this state after the order message has been reliably store by the manager;
 \item \textbf{inDelivery}: an order is in this state after the information about the elected drone has been reliably store by the manager;
 \item \textbf{delivered}: an order is in this state after the package has been delivered to it's destination and the manager server receives the "delivered" message form the drone.
+\end{itemize}
+
+\subsection{Status of a drone}
+The drone can be in one and only one of the following states:
+\begin{itemize}
+
 \end{itemize}
 
 
@@ -281,7 +287,7 @@ From broker to manager
 \end{itemize} \vspace{1em}
 From manager to broker
 \begin{itemize}
-	\item Update of an order: "\{Type, \{\}, ClientID, OrderID, \{\} \}".
+	\item Update of an order: "\{Type, \{\}, ClientID, OrderID, \{\}\}".
 	Where the type of the message is the status of the order, which can be inProgress, inDelivery, delivered. The broker will reliably store the new status without replying to the manager.
 \end{itemize}\vspace{1em}
 From manager to drones
@@ -293,7 +299,7 @@ From manager to drones
 
 	%\item Order status:
 
-	\item List of drones: "\{ droneList, ListOfAddresses \}".
+	\item List of drones: "\{ droneList, ListOfAddresses\}".
 	The message contains the list of new neighbours drones.
 
 	\item New drone: "\{newDrone, NewDroneAddr\}".
@@ -302,21 +308,22 @@ From manager to drones
 \end{itemize} \vspace{1em}
 From drones to manager
 \begin{itemize}
-	\item Registration:  "\{joinRequest, DroneID, DroneAddress \}".
+	\item Registration:  "\{joinRequest, DroneID, DroneAddress\}".
 	The drone will send the message to the manager to express it's interest in joining the network, the manager will respond with a list of drones addresses.
 
-	\item Request new drone address: "\{ requestDroneAddr, DroneID, DroneAddr \}".
+	\item Request new drone address: "\{ requestDroneAddr, DroneID, DroneAddr\}".
 	This message is sent when the drone has a low number of neighbours. The variables contains information about the sender.
 
-	\item Package delivered: "\{delivered, DroneAddress, ClientID, OrderID, \{\} \}".
+	\item Package delivered: "\{delivered, DroneAddress, ClientID, OrderID, \{\}\}".
 	The drone will send the message to the manager which will reliably store it. The manager will reply with "confirmDelivered", and will notify the broker.
 
-	\item Election result: "\{inDelivery, DroneID, ClientID, OrderID, \{\} \}".
+	\item Election result: "\{inDelivery, DroneID, ClientID, OrderID, \{\}\}".
+	The elected drone for an order will inform the manager that the delivery will start.
 
-	\item Election failure due to weight: "\{excessiveWeight, \{\}, ClientID, OrderID, \{\} \}".
+	\item Election failure due to weight: "\{excessiveWeight, \{\}, ClientID, OrderID, \{\}\}".
 	The election failed, for the current order, because there wasn't an available drone with sufficient carry capacity.
 
-	\item Failure:  "\{failureNotification, DroneAddress, DroneID, \{\}, \{\} \}".
+	\item Failure:  "\{failureNotification, DroneAddress, DroneID, \{\}, \{\}\}".
 	The drone will send the message to the manager informing it of the drone failure.
 \end{itemize} \vspace{1em}
 From drones to drones
@@ -336,10 +343,10 @@ From drones to drones
 	\item Echo election propagation: "\{election, HandlerAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}".
 	This message is sent in the first phase of the election.
 
-	\item Echo election back-propagation: "\{result, ElectedDroneID, ElectedPid, Distance, \{ClientID, OrderID\} \}".
+	\item Echo election back-propagation: "\{result, ElectedDroneID, ElectedPid, Distance, \{ClientID, OrderID\}\}".
 	This message is sent in the second phase of the election to the designed parent.
 
-	\item Echo election notification: "\{elected, ClientID, OrderID, Source, Destination \}".
+	\item Echo election notification: "\{elected, ClientID, OrderID, Source, Destination\}".
 	This message is sent from the initiator to the elected node to inform it of the result.
 \end{itemize}
 \newpage
@@ -431,8 +438,14 @@ Details about the implementation: every choice about platforms, languages, softw
 
 Important choices about implementation should be described here; e.g., peculiar data structures.
 
+\section{The space of movement}
+The space where the drones can move is a rectangle with length and heigh are natural numbers. The drones move at a constants speed of 1 square per second.
+In the early version the movement will not be shown, the drone will change position instantly after the needed period of time has passed.
+We make the simplifying assumption that the drones that aren't moving don't consume battery power.
+
+\section{Data Storage for servers}
 Currently the replication of the server function only as a backup there is no automatic takeover.
-\section{Erlang Term Storage (ETS)}
+
 The storage of data relative to orders in the broker server and, drones and order in the manager server is done through the "Erlang Term Storage" (ETS) for the development mode with the purpose of preventing SSD consumption. In production the function calls should be substituted with the "Disk Erlang Term Storage" (DETS), an other option which require small changes is to use the Mnesia: the database included in Erlang, or some other database. In the development mode we choose the AVL tree as the data structure used by ETS over the hash table, without particular justification.
 
 \chapter{Validation}
@@ -472,7 +485,7 @@ The tests are in the folder \textsf{Tests} with one file for every top level 	en
 	\item when there are online drones, the client makes an order and wait for confirmation, after a certain time it will also ask the broker for the status of the order.
 	\end{enumerate}
 
-
+\item \textbf{A drone with low battery goes to the recharging station}
 \item \textbf{Election of a drone to carry out a task}:
 
 \item \textbf{Support for a crashed drone while it is idle}:
