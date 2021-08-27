@@ -105,8 +105,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 %%%%%% messages relative to orders %%%%%%%%%%%%%
 
 		{ makeOrder, PidClient, ClientID, OrderID, Description } = Msg ->
-
-			io:format("~n about to start election: ~n"),
+		
 			InitElection = spawn(election, initElection, [self(), DroneID, SupportedWeight, DronePosition, DroneBattery,
 			                         NeighbourList, RechargingStations]),
 			InitElection! Msg ; % exit at bottom
@@ -114,6 +113,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 		{elected, ClientID, OrderID, Source, Destination} ->
 			Manager_Server_Addr ! {inDelivery, DroneID, ClientID, OrderID, {}}, % notify the manager
+			io:format("_________________"),
             spawn(drone, droneDelivery, [self(), DronePosition, Source, Destination, ClientID, OrderID]),
             drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
 			            RechargingStations, busy, LowBatteryCounter) ;
@@ -126,12 +126,17 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		electionFailed ->
+			
 		    spawn(drone, checkNeighbour, [NeighbourList, [], DroneID, self(), Manager_Server_Addr]); % exit at bottom
 
 
 		{excessiveWeight, ClientID, OrderID} ->
-			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]) % exit at bottom
+			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]); % exit at bottom
 
+		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} }  ->
+			%io:format("################"),
+			Addr ! {result, self(), ClientID, OrderID, {Source, Destination, Weight}}
+			
 	end,
 
 	% NORMAL EXIT WITHOUT STATE MODIFICATION
@@ -151,9 +156,9 @@ droneDelivery(DroneAddr, DronePosition, Source, Destination, ClientID, OrderID) 
     {D1,D2} = Destination,
 
     % round for excess
-    DistanceToPackage = math:ceil(math:sqrt( math:pow( P1-S1, 2 ) + math:pow( P2-S2, 2 ))),
-    DistanceOfDelivery = math:ceil(math:sqrt( math:pow( S1-D1, 2 ) + math:pow( S2-D2, 2 ))),
-
+    DistanceToPackage = round(math:ceil(math:sqrt( math:pow( P1-S1, 2 ) + math:pow( P2-S2, 2 )))),
+    DistanceOfDelivery = round(math:ceil(math:sqrt( math:pow( S1-D1, 2 ) + math:pow( S2-D2, 2 )))),
+	%io:format("DistanceToPackage: ~w~n", [DistanceToPackage]),
     % since speed is 1 per second, Distance is also time to wait
     timer:sleep(DistanceToPackage *1000),
 
@@ -164,6 +169,7 @@ droneDelivery(DroneAddr, DronePosition, Source, Destination, ClientID, OrderID) 
     DroneAddr ! {modifyBatteryCharge, DistanceToPackage + DistanceOfDelivery }, % pass the battery level to subctract
     DroneAddr ! {newPosition, Destination},     % notify new position
     DroneAddr ! {delivered, ClientID, OrderID}  % notify order completed
+	
 .
 
 goToRecharge(DroneAddr, DroneBattery, DronePosition, RechargingStations) ->
@@ -256,15 +262,19 @@ requestNewDrone(DronesCandidateToConnection, DronesAlreadyConnectedTo, MyDroneID
 
 % check that all the neighbours are alive, remove dead, if < 2 ask more to manager
 checkNeighbour(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr) ->
+	
     case NeighbourList of
 
-        [X|Xs] ->   X ! {queryOnline, MyDroneAddr},
+        [X|Xs] ->   if
+					X=={}  -> 	MyDroneAddr ! {newList, OnlineDrones};
+						
+					true->	X ! {queryOnline, MyDroneAddr},
 
-                    receive online -> checkNeighbour(Xs, OnlineDrones ++ [X], MyDroneID, MyDroneAddr, ManagerAddr)
-                    after % in case of timeout consider the drone dead, don't add it to online list
-				    2000 -> checkNeighbour(Xs, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr)
-                    end;
-
+                   		receive online -> checkNeighbour(Xs, OnlineDrones ++ [X], MyDroneID, MyDroneAddr, ManagerAddr)
+                   		after % in case of timeout consider the drone dead, don't add it to online list
+				   		2000 -> checkNeighbour(Xs, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr)
+                   		end
+					end;
 	    []     ->
 		   		Len = length(OnlineDrones),
 				if
