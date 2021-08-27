@@ -503,12 +503,12 @@ create_drone_list_aux(DroneTable, List, Counter)->
 
 % take key list return Value list
 mapLookup(Table, KeyList) ->
-    % io:format("keylist: ~w~n", [KeyList]),
-	Size=ets:info(Table, size),
+
+	Size = ets:info(Table, size), % io:format("keylist: ~w~n", [KeyList]),
 	if
-		Size ==0 -> io:format("the table is empty");
-		true->ok
-	end,	
+		Size == 0 -> io:format("the table is empty");
+		true      -> ok
+	end,
     case KeyList of
     []      ->  [];
     [X|Xs]  ->  [{_Key, Value}] = ets:lookup(Table, X), % extract the value
