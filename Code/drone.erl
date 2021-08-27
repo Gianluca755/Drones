@@ -20,9 +20,13 @@ start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingSt
 .
 
 
-drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery, RechargingStations, DroneStatus) -> % NeighbourList is only addresses
+drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition,
+            DroneBattery, RechargingStations, DroneStatus) ->
+% NeighbourList is only addresses
 
 	receive
+
+%%%%%% messages relative to drone status %%%%%%%%%%%%%
 
 		% receive the drone list to connect to, form manager
 		{droneList, DronesList} ->
@@ -53,6 +57,12 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			                        DronePosition, DroneBattery, RechargingStations, DroneStatus)
 			end;
 
+        % receive the list of online drones from the auxiliary process
+        {newList, OnlineDrones} -> drone_Loop(Manager_Server_Addr, DroneID, OnlineDrones, SupportedWeight, DronePosition,
+                                            DroneBattery, RechargingStations, DroneStatus) ;
+
+        % receive a query from an other drone
+        {queryOnline, DroneAddr} -> DroneAddr ! online ;
 
 		% receive a drone status query from manager
 		{droneStatus, Manager_Server_Addr} ->
@@ -60,10 +70,12 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
 			            RechargingStations, DroneStatus) ;
 
+
+%%%%%% messages relative to orders %%%%%%%%%%%%%
+
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		{electionFailed} ->
-			NewNeighbourList = checkNeighbour(NeighbourList, [], DroneID, self(), Manager_Server_Addr),
-
+		    spawn(drone, checkNeighbour, [NeighbourList, [], DroneID, self(), Manager_Server_Addr]),
 			drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight, DronePosition, DroneBattery,
 			            RechargingStations, DroneStatus);
 
@@ -182,26 +194,26 @@ requestNewDrone(DronesCandidateToConnection, DronesAlreadyConnectedTo, MyDroneID
 .
 
 
-% take a list of Neighbour drones, in case of failure or timeout remove them, if the list becomes <=2 ask for new drones addresses to the manager
-% return the list of online and connected Neighbour drones
+% take a list of Neighbour drones, in case of failure or timeout remove them, if the list becomes <2 ask for new drones addresses to the manager
+% return with a message to the main process the list of online drones
 
 % check that all the neighbours are alive, remove dead, if < 2 ask more to manager
-checkNeighbour(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr)->
+checkNeighbour(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr) ->
     case NeighbourList of
 
-        [X|Xs] ->   X ! {confirmConnection, self(), MyDroneAddr},
+        [X|Xs] ->   X ! {queryOnline, MyDroneAddr},
 
-                    receive confirmConnection ->
-					    checkNeighbour(Xs, OnlineDrones ++ [X], MyDroneID, MyDroneAddr, ManagerAddr)
+                    receive online -> checkNeighbour(Xs, OnlineDrones ++ [X], MyDroneID, MyDroneAddr, ManagerAddr)
                     after % in case of timeout consider the drone dead, don't add it to online list
 				    2000 -> checkNeighbour(Xs, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr)
                     end;
-	   []     ->
+
+	    []     ->
 		   		Len = length(OnlineDrones),
 				if
-				    Len < 2 -> NewDrone= requestNewDrone(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr, 0),
-					           checkNeighbour(NeighbourList, OnlineDrones ++ [NewDrone], MyDroneID, MyDroneAddr, ManagerAddr) ;
-					true -> true
+				    Len < 2 ->  NewDrone = requestNewDrone(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr, 0),
+					            checkNeighbour(NeighbourList ++ [NewDrone], OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr) ;
+					true ->     MyDroneAddr ! {newList, OnlineDrones}
 				end
 	end
 .

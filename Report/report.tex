@@ -327,6 +327,12 @@ From drones to drones
 	\item Connection confirmation: "confirmConnection".
 	The message is sent after the drone that made the request has been added to the list of neighbours. This message is the response of the previous one.
 
+	\item Query status: "\{queryOnline, DroneAddress\}".
+	This message is sent by a drone that want to know if the other drone is online. The \textit{DroneAddress} is the address for the response.
+
+	\item Response query: "online".
+	This message is the response at the previous query.
+
 	\item Echo election propagation: "\{election, HandlerAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}".
 	This message is sent in the first phase of the election.
 
