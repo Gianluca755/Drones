@@ -244,7 +244,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
                     {}  % empty description because it's already known by the broker
                 },
                 if
-                Type = delivered -> _PidClient ! confirmDelivered,
+                Type == delivered -> _PidClient ! confirmDelivered;
                 true -> ok
                 end
     end
