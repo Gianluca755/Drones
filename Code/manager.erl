@@ -133,7 +133,7 @@ loopPrimary(OrderTable, AddrRecord, DroneTable, LastCheckTime) ->
     % receive inDelivery (means elected) from a drone, save info and new status, inform the broker
     % receive delivered from a drone, save info and new status, inform the broker
     { Type, _Client_or_Drone_Address, _ClientID, _OrderID, _Description } = Msg
-    when Type == makeOrder ; Type == inDelivery ; Type == inProgress ->
+    when Type == makeOrder ; Type == inDelivery ; Type == delivered ->
         Handler = spawn( manager, handlerOrderPrimary, [OrderTable, AddrRecord, DroneTable] ),
         Handler ! Msg    % let the new handler apply the order
 
@@ -146,6 +146,7 @@ loopPrimary(OrderTable, AddrRecord, DroneTable, LastCheckTime) ->
 
     loopPrimary(OrderTable, AddrRecord, DroneTable, Time)
 .
+
 
 loopBackup(OrderTable, AddrRecord, DroneTable, LastPingTime) ->
     Time = erlang:system_time(milli_seconds),
@@ -197,7 +198,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
     % handling the order
     if
         Type == makeOrder ->
-			
+
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, {
                 {ClientID, OrderID},
@@ -214,11 +215,11 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
                                 PidBckHandler ! DroneID, % send drone choice to the backup
                                 receive confirmedBck -> true
                                 end,
-								
+
                                 % update table drone
                                 assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
                                 % we assume the drone is alive, the manager will ping it after a certaint amount of time
-                                
+
 								DroneAddr ! Msg;
             true -> io:format("Warning: no drones connected~n"), silentError
             end,
@@ -241,8 +242,11 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
                     ClientID,
                     OrderID,
                     {}  % empty description because it's already known by the broker
-                }
-
+                },
+                if
+                Type = delivered -> _PidClient ! confirmDelivered,
+                true -> ok
+                end
     end
 .
 

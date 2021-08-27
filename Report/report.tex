@@ -267,7 +267,8 @@ The delivery order from the client can be in one of the following status:
 \subsection{Status of a drone}
 The drone can be in one and only one of the following states:
 \begin{itemize}
-
+	\item \textbf{idle}: this is the state when it's not delivering or recharging;
+	\item \textbf{busy}: this is the state of the drone while is delivering a package or it's recharging the battery. In both cases it can start or propagate the messages of the elections.
 \end{itemize}
 
 
@@ -304,6 +305,9 @@ From manager to drones
 
 	\item New drone: "\{newDrone, NewDroneAddr\}".
 	The message is the response at the request of new drone by a drone.
+
+	\item Confirm reception: "confirmDelivered".
+	This is the reply to the message from the drone that notify the completion of the delivery.
 
 \end{itemize} \vspace{1em}
 From drones to manager
