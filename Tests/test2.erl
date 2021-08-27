@@ -20,20 +20,20 @@ startDrones() ->
     io:format("~n~n"),
 
 
-	Drone1 = spawn(drone, drone_Loop, [PrimaryManagerAddr, 1, [], 60]), % 1 is ID, 60 is supported weight
+																							
+	Drone1 = spawn(drone, start, [PrimaryManagerAddr, 1, 60, {rand:uniform(100),rand:uniform(100)}, []]), % 1 is ID, 60 is supported weight
 	PrimaryManagerAddr ! { joinRequest, 1, Drone1 },
     io:format("Drone1: ~w~n", [Drone1]),
     timer:sleep(200),
 
-	Drone2 = spawn(drone, drone_Loop, [PrimaryManagerAddr, 2, [], 60]), % 2 is ID, 60 is supported weight
+	Drone2 = spawn(drone, start, [PrimaryManagerAddr, 2, 60, {rand:uniform(100),rand:uniform(100)}, []]), % 2 is ID, 60 is supported weight
 	PrimaryManagerAddr ! { joinRequest, 2, Drone2 },
     io:format("Drone2: ~w~n", [Drone2]),
     timer:sleep(200),
 
-    Drone3 = spawn(drone, drone_Loop, [PrimaryManagerAddr, 3, [], 60]), % 3 is ID, 60 is supported weight
+    Drone3 = spawn(drone, start, [PrimaryManagerAddr, 3, 60, {rand:uniform(100),rand:uniform(100)}, []]), % 3 is ID, 60 is supported weight
 	PrimaryManagerAddr ! { joinRequest, 3, Drone3 },
     io:format("Drone3: ~w~n", [Drone3]),
-
 
     timer:sleep(4000),
     ok
