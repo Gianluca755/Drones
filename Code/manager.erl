@@ -481,16 +481,7 @@ create_drone_list(DroneTable) ->
 	mapLookup(DroneTable, ListID)
 .
 
-% take key list return Value list
-mapLookup(Table, KeyList) ->
-    % io:format("keylist: ~w~n", [KeyList]),
-    case KeyList of
-    []      ->  [];
-    [X|Xs]  ->  [{_Key, Value}] = ets:lookup(Table, X), % extract the value
-                [ Value | mapLookup(Table, Xs)]
-    end
-.
-
+%creates a list of unique drones to send to the new drone when there are more than 3 drones in the drone table
 create_drone_list_aux(DroneTable, List, Counter)->
 	if
 	    Counter == 0 -> List ;
@@ -505,5 +496,21 @@ create_drone_list_aux(DroneTable, List, Counter)->
 			end
 	end
 .
+
+% take key list return Value list
+mapLookup(Table, KeyList) ->
+    % io:format("keylist: ~w~n", [KeyList]),
+	Size=ets:info(Table, size),
+	if
+		Size ==0 -> io:format("the table is empty");
+		true->ok
+	end,	
+    case KeyList of
+    []      ->  [];
+    [X|Xs]  ->  [{_Key, Value}] = ets:lookup(Table, X), % extract the value
+                [ Value | mapLookup(Table, Xs)]
+    end
+.
+
 
 
