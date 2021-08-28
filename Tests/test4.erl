@@ -32,4 +32,4 @@ startRecharge() ->
     timer:sleep(200),
     Drone1 ! lowBattery
     timer:sleep(20000),
-.
+.c
