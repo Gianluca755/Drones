@@ -45,9 +45,9 @@ startDrones() ->
     PidClient = spawn(client, loopClient, [55, PrimaryBrokerAddr, BckBrokerAddr, 0]), % 55 is a random ID, 0 is the counter for orders
     io:format("PidClient: ~w~n", [PidClient]),
 
-	Drone1= spawn(drone, start, [PrimaryManagerAddr, 1, 60, {rand:uniform(100),rand:uniform(100)}, []]), timer:sleep(200),
-	Drone2= spawn(drone, start, [PrimaryManagerAddr, 2, 60, {rand:uniform(100),rand:uniform(100)}, []]), timer:sleep(200),
-	Drone3= spawn(drone, start, [PrimaryManagerAddr, 3, 60, {rand:uniform(100),rand:uniform(100)}, []]), timer:sleep(200),
+	_Drone1= spawn(drone, start, [PrimaryManagerAddr, 1, 60, {rand:uniform(100),rand:uniform(100)}, []]), timer:sleep(200),
+	_Drone2= spawn(drone, start, [PrimaryManagerAddr, 2, 60, {rand:uniform(100),rand:uniform(100)}, []]), timer:sleep(200),
+	_Drone3= spawn(drone, start, [PrimaryManagerAddr, 3, 60, {rand:uniform(100),rand:uniform(100)}, []]), timer:sleep(200),
 
 
     PidClient ! makeOrder,

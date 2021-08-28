@@ -54,7 +54,7 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
         DroneStatus == busy -> CompleteCandidates = Candidates ;
 
         % explicit opt out of this drone from the election
-        SupportedWeight < Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
+        SupportedWeight =< Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
 
         % if the drone can trasport the package, check battery
         DroneBattery >= DistanceOfDelivery + DistanceToPackage + DistanceRecharging ->
@@ -129,7 +129,7 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
         DroneStatus == busy -> CompleteCandidates = Candidates ;
 
         % explicit opt out from the elction
-        SupportedWeight < Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
+        SupportedWeight =< Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
 
         % if the drone can trasport the package, check battery
         DroneBattery >= DistanceOfDelivery + DistanceToPackage + DistanceRecharging ->
