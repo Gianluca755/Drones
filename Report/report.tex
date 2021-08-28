@@ -68,7 +68,7 @@ The key players in our implementation are listed below.
 \item \textbf{Client}: the client sends a request to the broker server for a delivery. It's also able to query the broker asking for the status of the delivery.
 \item \textbf{Drone}: the drones are the entities that move the packages between locations, new drones that want to join the network send a message to the manager server, drones with low battery must go to a charging station to recharge.
 \item \textbf{Broker server}: this server receives the requests from clients, it's a single point of failure so it is replicated by a backup copy (it's possible to have more copies).
-\item \textbf{Manager server}: this server handles the join of a new drone in the network, a drone can have it's own unique id or can obtain one from this server. Other functionalities are the detection of an offline drone and consequentially offers the best-effort guarantee of successful delivery. The server is a single point of failure so it is replicated by a backup copy (it's possible to have more copies).
+\item \textbf{Manager server}: this server handles the join of a new drone in the network, a drone can have it's own unique ID or can obtain one from this server. Other functionalities are the detection of an offline drone and consequentially offers the best-effort guarantee of successful delivery. The server is a single point of failure so it is replicated by a backup copy (it's possible to have more copies).
 \item \textbf{Recharging/Repairing station}: these are stations in fixed points in the map where drones can go to recharge their battery and where broken drones can be brought for repairs.
 \end{itemize}
 
@@ -128,21 +128,21 @@ Critical situations:
 	\item the case where a drone crashes after it has picked up the package and it's delivering it to point B;
 	\item the case where a drone has low battery power;
 	\item the case where a drone is out of battery power due to misreading of the sensor or strong wind;
-	\item the case where a drone crashes after it has sent its features(battery, position and carry weight) to the network for election;
+	\item the case where a drone crashes after it has given its availability for election to the network;
 	\item the case where no drone is available to deliver a package;
 	\item the case where a drone crashes during the join request to the manager server.
 \end{itemize}
 
 
-\section{Schedule for the design and implementation of the system}
-The schedule for how you plan to carry our your design and implementation is as follows:
-\begin{enumerate}
-\item Design of the system and definition of the functional and non-functional requirements;
-\item Selection of the programming language for the implementation;
-\item Specification of the protocols and algorithms that are used in the system;
-\item Implementation of the entities that play a role in the system and the communication between them;
-\item Testing of each part of the system and the system as a whole;
-\end{enumerate}
+%\section{Schedule for the design and implementation of the system}
+%The schedule for how you plan to carry our your design and implementation is as follows:
+%\begin{enumerate}
+%\item Design of the system and definition of the functional and non-functional requirements;
+%\item Selection of the programming language for the implementation;
+%\item Specification of the protocols and algorithms that are used in the system;
+%\item Implementation of the entities that play a role in the system and the communication between them;
+%\item Testing of each part of the system and the system as a whole;
+%\end{enumerate}
 
 \chapter{Analysis}\label{ch:analysis}
 
@@ -162,7 +162,7 @@ The following are the functional requirements required by the project:
 
 	\textbf{Effect}: the election of a drone.
 
-\item \textbf{Request the status of a delivery}: the client can request the status of it's request to the broker server.
+\item \textbf{Request the status of a delivery}: the client can request the status of its request to the broker server.
 
  	\textbf{Input}: the identification number for the order;
 
@@ -188,13 +188,13 @@ The following are the functional requirements required by the project:
 
 \item \textbf{A new drone joins the network}: a new drone that wants to join the network sends a message to the management server.
 
-	\textbf{Input}: the new drone unique id if he has one, its carry weight and its position;
+	\textbf{Input}: the new drone unique ID if it has one, its supported weight and its position;
 
-	\textbf{Output}: the unique id(if needed) and the other drones to connect to;
+	\textbf{Output}: the unique ID (if needed) and the other drones to connect to;
 
 	\textbf{Effect}: the entrance of the new drone in the network and the update of the manager drone table and the drones neighbour lists.
 
-\item \textbf{Election of a drone to carry out a task}: a drone will be selected based on its characteristics and its position to carry out a task
+\item \textbf{Election of a drone to carry out a task}: a drone will be selected based on its characteristics and its position, to carry out the task.
 
 	\textbf{Input}: the drone table and the task to do;
 
@@ -212,10 +212,10 @@ The following are the functional requirements required by the project:
 
 The following are the non-functional requirements required by the project:
 \begin{itemize}
-\item there is no limit on the minimum weight of a package but it can't weigh more than 1500 grams;
+\item the minimum weight of a package it's 0 grams and it can't weigh more than 1500 grams;
 \item there are no restrictions on the movements of the drones through the map or their position on the map;
 \item there are no restrictions on the position of the source or destination of the delivery request;
-\item it is not required to consider security problems or Byzantine behaviour the drones;
+\item it is not required to consider security problems or Byzantine behaviour of the drones;
 \item the system must be able to recover from the failure of a drone or a server;
 \item a drone has to respond to messages from other drones or the management servers within 10 seconds or it will be considered dead;
 \item it's important for following transparencies to be present:
@@ -231,6 +231,8 @@ The following are the non-functional requirements required by the project:
 
 \chapter{Project}
 In this chapter we'll describe the logical architecture of our system, the structure of the messages exchanged in our system, the algorithms used and we'll explain in detail the most important functions of our system.
+
+The project has been designed thinking of using Erlang as the main programming language.
 %This chapter is devoted to the description of the general architectures, and specific algorithms.
 
 \section{Logical architecture}
@@ -253,8 +255,12 @@ Since the broker and the manager servers are both single point of failure, it ha
 
 After some experiments it has been chosen to handle the messages received by the servers, (broker and manager) in the following way: the backup server keeps pinging the primary. When the acting primary receives a message related to the orders of the clients it start a new Erlang process to handle the message. This new Erlang process contacts the backup server which create an other Erlang process. The two new processes synchronize the status of the order between the primary and backup server.
 
-This approach permits an efficient use of the resources since it prevents blocking, allows to handle a vast number of messages thanks to the lightweight Erlang processes. Moreover when a fail happened it will disrupt only a small step of the execution of an order,instead of the entire server.
+This approach permits an efficient use of the resources since it prevents blocking, allows to handle a vast number of messages thanks to the lightweight Erlang processes. Moreover when a fail happened it will disrupt only a small step of the execution of an order, instead of the entire server.
 
+\section{The space of movement}
+The space where the drones can move is a rectangle with length and heigh are natural numbers. The drones move at a constants speed of 1 square per second.
+In the early version the movement will not be shown, the drone will change position instantly after the needed period of time has passed.
+We make the simplifying assumption that the drones that aren't moving don't consume battery power.
 
 \section{Protocols and algorithms}
 %Communication between components.
@@ -273,6 +279,8 @@ The drone can be in one and only one of the following states:
 \begin{itemize}
 	\item \textbf{idle}: this is the state when it's not delivering or recharging;
 	\item \textbf{busy}: this is the state of the drone while is delivering a package or it's recharging the battery. In both cases it can start or propagate the messages of the elections.
+	\item \textbf{failedOnline}: in this state the drone can't move but can send and receive messages.
+	\item \textbf{failedOffline}: in this state the drone can't move and can't send and receive messages.
 \end{itemize}
 
 
@@ -281,9 +289,10 @@ The drone can be in one and only one of the following states:
 From client to broker
 \begin{itemize}
 	\item New order: "\{makeOrder, ClientAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}".
-	Source and Destination are tuples {X, Y} referring to the starting location and the destination location of the package, Weight refers to the weight of the package. The broker acknowledge it with "confirmedOrder" when the order has been reliably saved.
+	Source and Destination are tuples referring to the starting and destination location of the package, Weight refers to the weight of the package. The broker acknowledge it with "confirmedOrder" when the order has been reliably saved.
 
-	\item Query order: "\{queryOrder, ClientAddress, ClientID, OrderID\}". The broker replies with "orderNotPresent" if there is no order with the given OrderID and ClientID or with the status of the order.
+	\item Query order: "\{queryOrder, ClientAddress, ClientID, OrderID\}".
+	This message is a request for information on a particular order. The broker replies with "orderNotPresent" if there is no order with the given OrderID and ClientID or with the status of the order.
 \end{itemize} \vspace{1em}
 From broker to manager
 \begin{itemize}
@@ -293,7 +302,7 @@ From broker to manager
 From manager to broker
 \begin{itemize}
 	\item Update of an order: "\{Type, \{\}, ClientID, OrderID, \{\}\}".
-	Where the type of the message is the status of the order, which can be inProgress, inDelivery, delivered. The broker will reliably store the new status without replying to the manager.
+	Where the type of the message is the status of the order, which can be \textit{inProgress, inDelivery, delivered}. The broker will reliably store the new status without replying to the manager.
 \end{itemize}\vspace{1em}
 From manager to drones
 \begin{itemize}
@@ -305,11 +314,11 @@ From manager to drones
 
 	%\item Order status:
 
-	\item List of drones: "\{ droneList, ListOfAddresses\}".
+	\item List of drones: "\{droneList, ListOfAddresses\}".
 	The message contains the list of new neighbours drones.
 
 	\item New drone: "\{newDrone, NewDroneAddr\}".
-	The message is the response at the request of new drone by a drone.
+	The message is the response at the request of new drone by a drone with a low number of neighbours.
 
 	\item Confirm reception: "confirmDelivered".
 	This is the reply to the message from the drone that notify the completion of the delivery.
@@ -318,7 +327,7 @@ From manager to drones
 From drones to manager
 \begin{itemize}
 	\item Registration:  "\{joinRequest, DroneID, DroneAddress\}".
-	The drone will send the message to the manager to express it's interest in joining the network, the manager will respond with a list of drones addresses.
+	The drone will send the message to the manager to express its interest in joining the network, the manager will respond with a list of drones addresses.
 
 	\item Request new drone address: "\{ requestDroneAddr, DroneID, DroneAddr\}".
 	This message is sent when the drone has a low number of neighbours. The variables contains information about the sender.
@@ -366,7 +375,7 @@ From drones to drones
 
 The Join of a new drone in the network follows the following steps:
 \begin{enumerate}
-\item  The drone that wants to join the network sends a message to the management server indicating its drone id and its maximum carry weight;
+\item  The drone that wants to join the network sends a message to the management server indicating its drone ID and its maximum carry weight;
 \item the management server saves the characteristics of the drone and responds with a list of drones;
 \item the drone sends a connect message to each drone in the list given by the management server;
 \item every drone contacted responds with an ack message,
@@ -413,9 +422,7 @@ The election could fail due to multiple reasons:
 	\item no drone available with sufficient weight capacity: conclude the election and notify the manager;
 \end{enumerate}
 
-
-
-Also, put here a detailed description of distributed algorithms used to solve specific problems of the project.
+%Also, put here a detailed description of distributed algorithms used to solve specific problems of the project.
 
 \section{Physical architecture and deployment}
 %Which nodes and platforms involved, and where each component is deployed.
@@ -432,7 +439,7 @@ The basic (tier 1) functionalities that the system must offer are:
 
 The extended (tier 2) functionalities are:
 \begin{itemize}
-\item support for failover and takeover of the servers;
+\item basic support for takeover and failback of the servers;
 \item instead of executing the various parts of the system on the same Erlang Machine, use containers to separate the various components of the system;
 \item transportation of a broken drone (with various possible weights), to a repairing station;
 \item ability of the manager to launch a query to the drones, asking for info on a particular order.
@@ -442,18 +449,18 @@ The extended (tier 2) functionalities are:
 
 \chapter{Implementation}
 
-Details about the implementation: every choice about platforms, languages, software/hardware, middleware, which has not been decided in the requirements.
+%Details about the implementation: every choice about platforms, languages, software/hardware, middleware, which has not been decided in the requirements.
+%Important choices about implementation should be described here; e.g., peculiar data structures.
+\section{General aspects}
+As stated before the used language is Erlang. A mention is due to the general schema used to create finite state machine (FSM) with concurrent auxiliary processes.
+In more details: there is a main loop process for modelling the FSM, this process spawns various auxiliary processes like timers or communicators which can, depending on the function, signalling the final result at the main process or modifying a shared data structure of the main process.
 
+For example, when a client ask the broker the status of an order, the broker will spawn an auxiliary process that will find the information and send it to the client.
 
-Important choices about implementation should be described here; e.g., peculiar data structures.
+This choice has been made to improve performance and simplify the code since  modelling an interaction between components is easier to do using a sequential procedure with blocking calls.
 
-\section{The space of movement}
-The space where the drones can move is a rectangle with length and heigh are natural numbers. The drones move at a constants speed of 1 square per second.
-In the early version the movement will not be shown, the drone will change position instantly after the needed period of time has passed.
-We make the simplifying assumption that the drones that aren't moving don't consume battery power.
-
-\section{Data Storage for servers}
-Currently the replication of the server function only as a backup there is no automatic takeover.
+\section{Data storage for servers}
+Currently the replication of the server function only as a backup there is no automatic takeover nor failback.
 
 The storage of data relative to orders in the broker server and, drones and order in the manager server is done through the "Erlang Term Storage" (ETS) for the development mode with the purpose of preventing SSD consumption. In production the function calls should be substituted with the "Disk Erlang Term Storage" (DETS), an other option which require small changes is to use the Mnesia: the database included in Erlang, or some other database. In the development mode we choose the AVL tree as the data structure used by ETS over the hash table, without particular justification.
 
@@ -474,7 +481,7 @@ The system is according to the transparencies declared in the section \ref{Syste
 
 \subsection{Functional requirements}
 The system that we have developed has been tested against the functional requirements defined in section \ref{func-req}.
-The tests are in the folder \textsf{Tests} with one file for every top level 	entry of the list below.
+The tests are in the folder \textsf{Tests} with one file for every top level entry of the list below.
 
 \begin{enumerate}
 \item \textbf{Request the status of a delivery}:
@@ -532,25 +539,25 @@ The possible extensions to our system are:
 Limit: scheduling performance.
 
 
-\appendix
-
-\chapter{Appendix}
-
-In the Appendix you can put code snippets, snapshots, installation instructions, etc.
-
-
-\chapter*{Evaluation}
-Your system will be judged mainly on how it operates as a distributed system. The primary evaluation will be according to whether your system has the following attributes:
-\begin{itemize}
-\item  It should be an interesting distributed system, making use of some of the algorithms we have covered in class for distributed synchronization, replication, fault tolerance and recovery, security, etc.
-\item The software should be well designed and well implemented, in terms of the overall architecture and the detailed realization.
-\item You should devise and apply systematic testing procedures, at both the unit and systems levels.
-\item The system should operate reliably and with good performance, even in the face of failures.
-\end{itemize}
-Important, but secondary considerations include:
-\begin{itemize}
-\item Time taken to do the project (the sooner the better, but do not miss details in order to end sooner)
-\item  How nice is the application's appearance: does it have a nice interface or a compelling visual display?
-\end{itemize}
+%\appendix
+%
+%\chapter{Appendix}
+%
+%In the Appendix you can put code snippets, snapshots, installation instructions, etc.
+%
+%
+%\chapter*{Evaluation}
+%Your system will be judged mainly on how it operates as a distributed system. The primary evaluation will be according to whether your system has the following attributes:
+%\begin{itemize}
+%\item  It should be an interesting distributed system, making use of some of the algorithms we have covered in class for distributed synchronization, replication, fault tolerance and recovery, security, etc.
+%\item The software should be well designed and well implemented, in terms of the overall architecture and the detailed realization.
+%\item You should devise and apply systematic testing procedures, at both the unit and systems levels.
+%\item The system should operate reliably and with good performance, even in the face of failures.
+%\end{itemize}
+%Important, but secondary considerations include:
+%\begin{itemize}
+%\item Time taken to do the project (the sooner the better, but do not miss details in order to end sooner)
+%\item  How nice is the application's appearance: does it have a nice interface or a compelling visual display?
+%\end{itemize}
 
 \end{document}
