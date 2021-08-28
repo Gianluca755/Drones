@@ -23,6 +23,7 @@ loopClient(ClientID, BrokerAddr, BckBrokerAddr, CounterOrder) ->
                             {rand:uniform(100), rand:uniform(100) }, % destination
                             rand:uniform(80) % weight
                             }},
+					
                     BrokerAddr ! Msg,
                     receive confirmedOrder -> io:format("Order accepted by broker ~n")
                     end,

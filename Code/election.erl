@@ -3,7 +3,7 @@
 -export([initElection/7, nonInitElection/7]).
 
 -export([checkResult/1, extractID_Addr_Distance/1]).
-
+-export([findNearestRechargingStation/2,localDecisionAux/2]).
 % receive msg with new order
 % InitElection = spawn(drone, initElection, [self(), Neighbours]),
 % InitElectionElection ! Msg
@@ -18,18 +18,20 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
     { makeOrder, _PidClient, ClientID, OrderID, {Source, Destination, Weight} } = Order,
 
     NewOrder = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
-    sendToAll(NewOrder, Neighbours),
 
-    Results = receiveN(length(Neighbours), []),
+    sendToAll(NewOrder, Neighbours), % io:format("NeighInit~w~n", [Neighbours]),
 
-    if % in the case where the await of the response took too much time, exit with error
+    Results = receiveN(length(Neighbours), []), % io:format("ResultsInit: ~w~n", [Results]),
+
+    if % case where the await of the response took too much time
         Results == 'EXIT' -> DroneAddr ! electionFailed, exit("err");
         true -> true
     end,
 
-    SelectedResults = list:filter(checkResult, Results),  % select only the result messages, not the election one
-
-    Candidates = list:map(extractID_Addr_Distance, SelectedResults),
+    SelectedResults = filter(Results, []),  % select only the result messages
+	%io:format("selectedResultsInit: ~w~n", [SelectedResults]),
+    Candidates = extract(SelectedResults,[]),
+	%io:format("candidates: ~w~n", [Candidates]),
 
     % calculate distance needed by the delivery
     {S1, S2} = Source,
@@ -45,8 +47,8 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
 
     %% make local decision %%
 
-    % {-1, 9999} is for the case when the drone can't deliver for some reason different from the weight
-    % {-2, 9999} is for the case when the drone can't deliver because the package weight too much
+    % {-1, {}, 9999} is for the case when the drone can't deliver for some reason different from the weight
+    % {-2, {}, 9999} is for the case when the drone can't deliver because the package weight too much
 
     if
         DroneStatus == busy -> CompleteCandidates = Candidates ;
@@ -66,13 +68,14 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
     % choose the best between the initiator node and the neighbours
     DecidedDrone = localDecision(CompleteCandidates),
 
-    {ElectedDroneID, ElectedPid, _ElectedDistance} = DecidedDrone,
-
+    {ElectedPid, ElectedDroneID, _ElectedDistance} = DecidedDrone,
+	% io:format("DecidedDrone: ~w~n", [DecidedDrone]),
     % if there is no drone that can carry the weight check for -1, and alert main process of drone that will noitify the manager
     % ( the election doesn't flag the other cases where the fleet can't deliver because the manager will retry )
     if
         ElectedDroneID == -1 -> DroneAddr ! {excessiveWeight, ClientID, OrderID} ;
         true -> % in case of direct connection otherwise propagate in simil broadcast
+
                 ElectedPid ! {elected, ClientID, OrderID, Source, Destination }
     end
 
@@ -91,17 +94,19 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
     Children = list:delete(Parent, Neighbours),
 
     Wave2 = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
+	%io:format("NeighNoInit~w~n", [Children]),
+
     sendToAll(Wave2, Children),
     Results = receiveN(length(Children), []),
-
+	%io:format("ResultsNoInit: ~w~n", [Results]),
     if % case where the await of the response took too much time
         Results == 'EXIT' -> DroneAddr ! electionFailed, exit("err");
         true -> true
     end,
 
-    SelectedResults = list:filter(checkResult, Results),  % select only the result messages
+    SelectedResults = filter(Results, []),  % select only the result messages
 
-    Candidates = list:map(extractID_Addr_Distance, SelectedResults),
+    Candidates = extract(SelectedResults,[]),
 
     % calculate distance needed by the delivery
     {S1, S2} = Source,
@@ -159,10 +164,31 @@ sendToAll(Msg, Addresses) ->
     end
 .
 
+filter(Received, Stored) ->
+	 case Received of
+		[]     -> Stored;
+   		[X|Xs] -> {Type, _, _, _, _} = X,
+    	if
+       		Type == result -> filter(Xs, Stored ++ [X]);
+        	true -> filter(Xs, Stored)
+    	end
+	 end
+.
+
+extract(Received, Stored)->
+	case Received of
+		[]     -> Stored;
+   		[X|Xs] -> {result, ElectedDroneID, ElectedPid, Distance, {_ClientID, _OrderID, Weight} } = X,
+				  extract(Xs, Stored ++ [{ElectedDroneID, ElectedPid, Distance}])
+	end
+.
+
+
 receiveN(N, Received) ->
+
     if
         N == 0 -> Received;
-        N > 0  -> receive Msg -> receiveN(N-1, [Msg | Received])
+        N > 0  -> receive {result, Addr, ClientID, OrderID, {Source, Destination, Weight}}= Msg -> receiveN(N-1, [Msg | Received])
                   after (3 * 60 * 1000) -> 'EXIT'
                   end
     end
@@ -170,7 +196,7 @@ receiveN(N, Received) ->
 
 % find min distance and in case of conflict choose the min ID
 localDecision(List) ->
-    localDecisionAux({-1, 9999}, List)
+    localDecisionAux({-1, {}, 9999}, List)
     % {-1, 9999} is for the case when the drone can't deliver for some reason different from the weight
     % {-2, 9999} is for the case when the drone can't deliver because the package weight too much
     % in the way the function are build the send one have precedence while the first one is the default in the
@@ -216,16 +242,17 @@ extractID_Addr_Distance(X) ->
     {ElectedDroneID, ElectedPid, Distance}
 .
 
-% returns the min distance to the recharging station
+% returns the distance to the nearest recharging station
 findNearestRechargingStation(Position, Stations) ->
     {P1, P2} = Position,
-
-    Distances = list:map(
-        fun(Station) -> {S1, S2} = Station, math:sqrt( math:pow( S1-P1, 2 ) + math:pow( S2-P2, 2 ) ) end,
-        Stations
-        ),
-
-    list:min(Distances)
-
-.
+	if
+		length(Stations) ==0 ->
+			io:format("there are no recharging stations"), Stations;
+		true->
+			Distances = lists:map(
+        	fun(Station) -> {S1, S2} = Station, math:sqrt( math:pow( S1-P1, 2 ) + math:pow( S2-P2, 2 ) ) end,
+        	Stations
+        	),
+   			lists:min(Distances)
+	end.
 

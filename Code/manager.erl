@@ -206,7 +206,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             ),
             % 0 for empty droneID, the time is the last time of the inspection by the manager
 
-
+			
             % select random drone
             Candidate = pick_rand(DroneTable),
 
@@ -215,7 +215,7 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
                                 PidBckHandler ! DroneID, % send drone choice to the backup
                                 receive confirmedBck -> true
                                 end,
-
+								
                                 % update table drone
                                 assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
                                 % we assume the drone is alive, the manager will ping it after a certaint amount of time
@@ -506,11 +506,7 @@ create_drone_list_aux(DroneTable, List, Counter)->
 % take key list return Value list
 mapLookup(Table, KeyList) ->
 
-	Size = ets:info(Table, size), % io:format("keylist: ~w~n", [KeyList]),
-	if
-		Size == 0 -> io:format("the table is empty");
-		true      -> ok
-	end,
+
     case KeyList of
     []      ->  [];
     [X|Xs]  ->  [{_Key, Value}] = ets:lookup(Table, X), % extract the value

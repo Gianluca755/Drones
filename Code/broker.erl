@@ -158,6 +158,7 @@ handlerOrderPrimary(OrderTable, AddrRecord) ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight,0,0, saved} } ),
             ClientAddress ! confirmedOrder , % send ack to the client
+			
             AddrRecord#addr.primaryManagerAddr ! Msg  % send order to the manager
             ;
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
