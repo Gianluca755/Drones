@@ -1,6 +1,6 @@
 -module(election).
 
--export([initElection/7, nonInitElection/7]).
+-export([initElection/8, nonInitElection/8]).
 
 -export([checkResult/1, extractID_Addr_Distance/1]).
 -export([findNearestRechargingStation/2,localDecisionAux/2]).

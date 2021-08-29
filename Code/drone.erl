@@ -99,7 +99,8 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
                                 DronePosition, DroneBattery - BatteryUsed, RechargingStations, DroneStatus, LowBatteryCounter ) ;
 
 
-        rechargeCompleted -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
+        rechargeCompleted -> io:format("~n recharge completed"),
+			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
                                 DronePosition, ?BATTERY_CAPACITY, RechargingStations, idle, 0 ) ;
 
 %%%%%% messages relative to orders %%%%%%%%%%%%%
@@ -175,18 +176,21 @@ goToRecharge(DroneAddr, DroneBattery, DronePosition, RechargingStations) ->
 
 	RecStation = election:findNearestRechargingStation(DronePosition, RechargingStations),
 	{S1,S2} = DronePosition,
-	{D1,D2} = RecStation,
+	%{D1,D2} = RecStation,
 
-	Distance = math:ceil(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 )) ),
-
+	%Distance = math:ceil(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 )) ),
+	Distance =round(RecStation),
 	% since speed is 1 per second, Distance is also time to wait
     timer:sleep(Distance *1000),
     DroneAddr ! {modifyBatteryCharge, Distance}, % pass the battery level to subctract
     DroneAddr ! {newPosition, RecStation},      % notify new position
 
-    RemainingBattery = ?BATTERY_CAPACITY - Distance - DroneBattery,
-    timer:sleep( RemainingBattery * 1000 * ?RECHARGE_SPEED ),
-
+    RemainingBattery = round(?BATTERY_CAPACITY - Distance - DroneBattery),
+	if 
+		RemainingBattery < 0 -> io:format("remaining battery negative ~w~n",[RemainingBattery]);
+	
+    	true -> timer:sleep( RemainingBattery * 1000 * ?RECHARGE_SPEED )
+	end,
     DroneAddr ! rechargeCompleted
 .
 

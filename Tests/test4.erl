@@ -1,7 +1,7 @@
 -module(test4).
 -compile(export_all).
 
-% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]). c(election).
+% c
 
 startRecharge() ->
 
@@ -14,7 +14,7 @@ startRecharge() ->
     PrimaryBrokerAddr = spawn(broker, startPrimary, [PrimaryManagerAddr, BckManagerAddr]),
     BckBrokerAddr = spawn(broker, startBck, [PrimaryBrokerAddr, PrimaryManagerAddr, BckManagerAddr]),
 
-    timer:sleep(200)
+    timer:sleep(200),
 
     Drone1 = spawn(drone, drone_Loop, [
                             PrimaryManagerAddr,
@@ -23,13 +23,13 @@ startRecharge() ->
                             60,                                     % supported weight
                             {rand:uniform(100),rand:uniform(100)},  % initial position
                             500,                                    % battery life
-                            [{10,10}]                               % recharging station
+                            [{10,10}],                               % recharging station
                             idle,                                   % status of the drone
                             3                                       % low battery count
                             ]
     ),
 
     timer:sleep(200),
-    Drone1 ! lowBattery
-    timer:sleep(20000),
-.c
+    Drone1 ! lowBattery,
+    timer:sleep(20000)
+.
