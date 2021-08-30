@@ -109,11 +109,12 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		{ makeOrder, _PidClient, _ClientID, _OrderID, _Description } = Msg ->
 
 			InitElection = spawn(election, initElection, [self(), DroneID, SupportedWeight, DronePosition, DroneBattery,
-			                         NeighbourList, RechargingStations]),
+			                         NeighbourList, RechargingStations, DroneStatus]),
 			InitElection! Msg ; % exit at bottom
 
 
 		{elected, ClientID, OrderID, Source, Destination} ->
+			io:format("Drone ~w has been elected.~n", [DroneID]),
 			Manager_Server_Addr ! {inDelivery, DroneID, ClientID, OrderID, {}}, % notify the manager
             spawn(drone, droneDelivery, [self(), DronePosition, Source, Destination, ClientID, OrderID]),
             drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
