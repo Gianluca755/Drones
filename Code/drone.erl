@@ -9,8 +9,8 @@
 %-export([start/5]).
 %-export([connect_to_drones/5, requestNewDrone/6, checkNeighbour/5, drone_Loop/8]).
 
--define(BATTERY_CAPACITY, 500). % battery expressed as remaining distance
--define(RECHARGE_SPEED, 1).     % seconds needed to recharge the power equivalent to 1 move
+-define(BATTERY_CAPACITY, 500). % NEED TO BE INT ! battery expressed as remaining distance
+-define(RECHARGE_SPEED, 1).     % NEED TO BE INT ! seconds needed to recharge the power equivalent to 1 move
 
 start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingStations) ->
 
@@ -156,9 +156,9 @@ droneDelivery(DroneAddr, DronePosition, Source, Destination, ClientID, OrderID) 
 	{S1,S2} = Source,
     {D1,D2} = Destination,
 
-    % round for excess
-    DistanceToPackage = round(math:ceil(math:sqrt( math:pow( P1-S1, 2 ) + math:pow( P2-S2, 2 )))),
-    DistanceOfDelivery = round(math:ceil(math:sqrt( math:pow( S1-D1, 2 ) + math:pow( S2-D2, 2 )))),
+    % trunc for converting to int
+    DistanceToPackage = trunc(math:ceil(math:sqrt( math:pow( P1-S1, 2 ) + math:pow( P2-S2, 2 )))),
+    DistanceOfDelivery = trunc(math:ceil(math:sqrt( math:pow( S1-D1, 2 ) + math:pow( S2-D2, 2 )))),
 	%io:format("DistanceToPackage: ~w~n", [DistanceToPackage]),
     % since speed is 1 per second, Distance is also time to wait
     timer:sleep(DistanceToPackage *1000),
@@ -192,7 +192,7 @@ goToRecharge(DroneAddr, DroneBattery, DronePosition, RechargingStations) ->
 
    			RecStation = lists:nth(MinIndex, RechargingStations),
 
-   		    Distance = trunc(math:ceil(Min)),
+   		    Distance = trunc(math:ceil(Min)), % trunc for converting to int
 
    		    io:format("Drone going to Station: ~w, Distance: ~w~n", [RecStation, Distance]),
 
