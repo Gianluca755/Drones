@@ -370,7 +370,7 @@ From drones to drones
 	\item Echo election back-propagation: "\{result, ElectedDroneID, ElectedPid, Distance, \{ClientID, OrderID\}\}".
 	This message is sent in the second phase of the election to the designed parent.
 
-	\item Echo election notification: "\{elected, ClientID, OrderID, Source, Destination\}".
+	\item Echo election notification: "\{elected, ClientID, OrderID, Source, Destination, Weight\}".
 	This message is sent from the initiator to the elected node to inform it of the result.
 \end{itemize}
 \newpage
