@@ -105,6 +105,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
                                 DronePosition, ?BATTERY_CAPACITY, RechargingStations, idle, 0 ) ;
 
         % crashOnline -> % if in delivery send message with ack to neighbour(one at a time) else send to manager
+
         crashOffline -> io:format("crashOffline drone: ~w.~n", [DroneID]),
                         exit("crashOffline") ;
 
