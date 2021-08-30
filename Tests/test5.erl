@@ -63,13 +63,11 @@ startElection() ->
                             ]
     ),
 
-
 	Drone1 ! {newList,[Drone2,Drone3]},
 	Drone2 ! {newList,[Drone1,Drone3]},
 	Drone3 ! {newList,[Drone2,Drone1]},
 
 	timer:sleep(2000),
-
 	Drone1 ! {makeOrder,
                 self(),     % dummy ClientAddress
 	            1,          % ClientID
@@ -83,8 +81,8 @@ startElection() ->
 
     %timer:sleep(1000),
 	% simulate manager for the confirmation of the completation of the delivery
-	receive {delivered, Pid, ClientID, OrderID, {}} -> Pid ! confirmDelivered end
-
+	receive {delivered, Pid, ClientID, OrderID, {}} -> Pid ! confirmDelivered end,
+	ok
 .
 
 

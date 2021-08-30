@@ -17,7 +17,7 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
     % decompose order
     { makeOrder, _PidClient, ClientID, OrderID, {Source, Destination, Weight} } = Order,
 
-    NewOrder = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
+    NewOrder = { election, [DroneAddr], ClientID, OrderID, {Source, Destination, Weight} },
 
     sendToAll(NewOrder, Neighbours), % io:format("NeighInit~w~n", [Neighbours]),
 
@@ -93,19 +93,21 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
 % choose the best option and send to parent, wait for decision to propagate.
 
 nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, Neighbours, RechargingStations, DroneStatus) ->
-    receive Wave -> true
+    receive Wave -> 
+				%io:format("Drone syncronization ~n"),
+				true
     end,
 
     { election, Parent, ClientID, OrderID, {Source, Destination, Weight} } = Wave, % select parent for the echo algo
 
-    Children = list:delete(Parent, Neighbours),
+    Children = delete(Parent, Neighbours,[]),
 
-    Wave2 = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
-	%io:format("NeighNoInit~w~n", [Children]),
+    Wave2 = { election, Parent ++ [DroneAddr], ClientID, OrderID, {Source, Destination, Weight} },
+	
 
     sendToAll(Wave2, Children),
     Results = receiveN(length(Children), []),
-	%io:format("ResultsNoInit: ~w~n", [Results]),
+	
     if % case where the await of the response took too much time
         Results == 'EXIT' -> DroneAddr ! electionFailed, exit("err");
         true -> true
@@ -158,7 +160,7 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
     {ElectedDroneID, ElectedPid, ElectedDistance} = DecidedDrone,
 
     % push decision to parent
-    Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance},
+    hd(Parent) ! {result, ElectedDroneID, ElectedPid, ElectedDistance},
 
     % the election decision will be communicated with direct connection, to this handler which will send the message to
     % the main process of the drone.
@@ -167,6 +169,7 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
     receive {elected, ClientID, OrderID, Source, Destination } = MsgElection -> DroneAddr ! MsgElection % let the drone handle it
     after (3 * 60 * 1000) -> true % exit after 3m
     end
+
 .
 
 
@@ -187,6 +190,18 @@ filter(Received, Stored) ->
         	true -> filter(Xs, Stored)
     	end
 	 end
+.
+
+delete(Parent, Neighbours, Stored)->
+	case Neighbours of
+		[]     -> Stored;
+   		[X|Xs] ->%io:format("Parent: ~w~n", [Parent]), io:format("X: ~w~n", [X]),
+				 IsIn = lists:member(X, Parent),
+				  if 
+					  IsIn ->delete(Parent, Xs, Stored);
+				  	  true ->delete(Parent, Xs, Stored ++ [X])
+				 end
+	end
 .
 
 extract(Received, Stored)->

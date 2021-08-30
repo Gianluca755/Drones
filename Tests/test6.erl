@@ -15,7 +15,7 @@ startOrder() ->
     BckBrokerAddr = spawn(broker, startBck, [PrimaryBrokerAddr, PrimaryManagerAddr, BckManagerAddr]),
 
     timer:sleep(200),
-    io:format("~n~n"),
+   
 
     PidClient = spawn(client, loopClient, [55, PrimaryBrokerAddr, BckBrokerAddr, 0]), % 55 is a random ID, 0 is the counter for orders
     io:format("PidClient: ~w~n", [PidClient]),
@@ -28,13 +28,24 @@ startOrder() ->
     timer:sleep(200),
 
     spawn(drone, start, [PrimaryManagerAddr, 3, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 3 is ID, 60 is supported weight
-
-
+	timer:sleep(200),
+	
+	spawn(drone, start, [PrimaryManagerAddr, 4, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 2 is ID, 60 is supported weight
+    timer:sleep(200),
+	
+	spawn(drone, start, [PrimaryManagerAddr, 5, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 2 is ID, 60 is supported weight
+    timer:sleep(200),
+	
+	spawn(drone, start, [PrimaryManagerAddr, 6, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 2 is ID, 60 is supported weight
+    timer:sleep(200),
     io:format("Drone syncronization ~n"),
     timer:sleep(5000),
     PidClient ! makeOrder,
-    timer:sleep(20000)
-
+    timer:sleep(20000),
+	ok
 .
 
 
+	
+	
+	

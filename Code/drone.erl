@@ -157,7 +157,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		    Handler ! Msg
 
 	end,
-
+	
 	% NORMAL EXIT WITHOUT STATE MODIFICATION
 	drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
 			            RechargingStations, DroneStatus, LowBatteryCounter)
