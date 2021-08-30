@@ -574,25 +574,27 @@ The system that we have developed partially satisfies the functional requirement
 
 
 \chapter{Conclusions}
-All the requirements defined in the previous chapters have been met and all the basic functionalities(tier 1) defined in the development plan mentioned in section \ref{Development-plan} have been implemented, as for the extra features(tier 2) defined in the development plan:
-\begin{itemize}
-\item we have developed a schema for the switch to the backup servers as explained in section \ref{Primary-backup-schema};(to expand)
-\item the many entities of our system initially were all on the same Erlang machine but we have divided each one of them in an container to better simulate the distributed architecture of the system; (to expand)
-\item the broken drone can send a message to he management server and it will elect another drone to move the broken one to a repairing station, in our system the broken drone stays in the repair station but the system can be expanded and after a certain amount of time the drone can be considered repaired and can request to join the network again.
-\end{itemize}
+%All the requirements defined in the previous chapters have been met and all the basic functionalities(tier 1) defined in the development plan mentioned in section \ref{Development-plan} have been implemented, as for the extra features(tier 2) defined in the development plan:
+%\begin{itemize}
+%\item we have developed a schema for the switch to the backup servers as explained in section \ref{Primary-backup-schema};(to expand)
+%\item the many entities of our system initially were all on the same Erlang machine but we have divided each one of them in an container to better simulate the distributed architecture of the system; (to expand)
+%\item the broken drone can send a message to he management server and it will elect another drone to move the broken one to a repairing station, in our system the broken drone stays in the repair station but the system can be expanded and after a certain amount of time the drone can be considered repaired and can request to join the network again.
+%\end{itemize}
+The partial implementation of the backup system required various attempt and it consumed more time than estimated.
+
 
 \section{System extensions}
 The possible extensions to our system are:
 \begin{itemize}
-	\item realistic broker for large numbers of clients on multiple locations.
 	\item Broker support for multiple manager servers for various fleets of drones.
-	\item Support for warehouses, dynamic number of drones.
+	\item Support for warehouses where the drones can stay
+	\item Separation of recharging station from the repairing station.
 	\item Security concerns should be addressed, in all the parts of the system.
 	\item The backup system could be improved with more servers, this can be achieved not by adding the backup server's addresses in the clients, but by a proxy server that choose the leader of the various broker servers. The broker servers can be configured with a master slave configuration or some more efficient solution like data partitioning. The proxy server can act as load balancer, accordingly to the configuration chosen.
-	\item If the manager has the info about the supported weight of the drones, it can avoid send false alert when the delivery fails due to occupied drones.
+	\item If the manager has information about the supported weight of the drones, it can avoid send false alert to an operator, when the delivery fails due to occupied drones.
+	\item The selection of a drone to carry out the delivery, done by election, is certainly not weighting on the manager but allows only for a simple scheduling strategy; the case where the manager act as a controller of drones should be explored due to the efficient scheduling strategies that could be implemented for the deliveries. Moreover a controller manager would be able to determine how many and which type of drones should be flying in a particular moment.
 \end{itemize}
 
-Limit: scheduling performance.
 
 
 %\appendix
