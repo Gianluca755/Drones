@@ -149,9 +149,12 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		{excessiveWeight, ClientID, OrderID} ->
 			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]); % exit at bottom
 
-		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} } ->
-			%io:format("################"),
-			Addr ! {result, self(), ClientID, OrderID, {Source, Destination, Weight}}
+		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} } = Msg ->
+            Handler = spawn(election,
+		        nonInitElection,
+		        [self(), DroneID, SupportedWeight, DronePosition, DroneBattery, NeighbourList, RechargingStations, DroneStatus]
+		    ),
+		    Handler ! Msg
 
 	end,
 
