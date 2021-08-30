@@ -115,7 +115,7 @@ Note: the criterion used for the decision of the node is based on distances inst
 
 \section{Test cases}
 
-To test our system we'll use a program that simulates the environment and spawns drones in random positions and with random requests from clients.
+
 
 The test cases that will be analysed are listed below:\\
 
@@ -248,7 +248,7 @@ The Erlang modules used in the implementation of the system are:
 \item \textbf{client.erl}: this module contains all the functions needed by the client to make a delivery request and to query the status of its delivery;
 \item \textbf{drone.erl}: this module contains all the functions needed by the drone to exchange messages with other drones for the election and with the management server to start the election and to update the status of the delivery;
 \item \textbf{election.erl}: this module contains all the functions needed to elect a drone for the delivery and to exchange messages with the drones to achieve this goal;
-\item \textbf{environment.erl}: the role of this module is to set up the broker and the manager servers and to spawn the clients and the drones;
+
 \item \textbf{manager.erl}: this module contains all the functions needed by the manager server to handle the join of a new drone, to start the election procedure and to update the relative drone table and order status;
 \item \textbf{utils.erl}: this module contains some functions that are useful for multiple other modules.
 \end{itemize}
