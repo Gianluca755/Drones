@@ -51,18 +51,19 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
     % {-2, {}, 9999} is for the case when the drone can't deliver because the package weight too much
 
     if
-        DroneStatus == busy -> CompleteCandidates = Candidates ;
+        % drone busy, doesn't participate (implicit opt out)
+        DroneStatus == {delivering, _, _, _, _, _} -> CompleteCandidates = Candidates ;
 
-        % explicit opt out of this drone from the election
-        SupportedWeight =< Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
+        % package too heavy, explicit opt out of this drone from the election
+        Weight > SupportedWeight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
 
-        % if the drone can trasport the package, check battery
-        DroneBattery >= DistanceOfDelivery + DistanceToPackage + DistanceRecharging ->
-            CompleteCandidates = [ {DroneID, self(), DistanceToPackage}| Candidates],
-            % if this node can't partecepate due to low battery power, send a note the loop process of the drone
-            DroneAddr ! lowBattery ;
+        % if the drone can trasport the package, check if battery is not enough
+        DroneBattery < DistanceOfDelivery + DistanceToPackage + DistanceRecharging ->
+            CompleteCandidates = Candidates, % implicit opt out
+            DroneAddr ! lowBattery ; % send a note the loop process of the drone
 
-        true -> CompleteCandidates = Candidates % doesn't have to explicitly opt out from the election because of the structure of localDecision (called below)
+        % drone offer itself as candidate
+        true -> CompleteCandidates = [ {DroneID, self(), DistanceToPackage}| Candidates]
     end,
 
     % choose the best between the initiator node and the neighbours
@@ -76,7 +77,7 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
         ElectedDroneID == -1 -> DroneAddr ! {excessiveWeight, ClientID, OrderID} ;
         true -> % in case of direct connection otherwise propagate in simil broadcast
 
-                ElectedPid ! {elected, ClientID, OrderID, Source, Destination }
+                ElectedPid ! {elected, ClientID, OrderID, Source, Destination, Weight }
     end
 
 .
@@ -126,17 +127,19 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
     % {-2, 9999} is for the case when the drone can't deliver because the package weight too much
 
     if
-        DroneStatus == busy -> CompleteCandidates = Candidates ;
+        % drone busy, doesn't participate (implicit opt out)
+        DroneStatus == {delivering, _, _, _, _, _} -> CompleteCandidates = Candidates ;
 
-        % explicit opt out from the elction
-        SupportedWeight =< Weight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
+        % package too heavy, explicit opt out of this drone from the election
+        Weight > SupportedWeight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
 
-        % if the drone can trasport the package, check battery
-        DroneBattery >= DistanceOfDelivery + DistanceToPackage + DistanceRecharging ->
-            CompleteCandidates = [ {DroneID, self(), DistanceToPackage}| Candidates],
-            % if this node can't partecepate due to low battery power, send a note the loop process of the drone
-            DroneAddr ! lowBattery ;
-        true -> CompleteCandidates = Candidates % doesn't have to explicitly opt out from the election because of the structure of localDecision (called below)
+        % if the drone can trasport the package, check if battery is not enough
+        DroneBattery < DistanceOfDelivery + DistanceToPackage + DistanceRecharging ->
+            CompleteCandidates = Candidates, % implicit opt out
+            DroneAddr ! lowBattery ; % send a note the loop process of the drone
+
+        % drone offer itself as candidate
+        true -> CompleteCandidates = [ {DroneID, self(), DistanceToPackage}| Candidates]
     end,
 
     % choose the best between the initiator node and the neighbours

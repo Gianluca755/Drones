@@ -283,7 +283,8 @@ The delivery order from the client can be in one of the following status:
 The drone can be in one and only one of the following states:
 \begin{itemize}
 	\item \textbf{idle}: this is the state when it's not delivering or recharging;
-	\item \textbf{busy}: this is the state of the drone while is delivering a package or it's recharging the battery. In both cases it can start or propagate the messages of the elections.
+	\item \textbf{charging}: this is the state when the drone is going to a recharging station or is already there, it can start or propagate the messages of the election.
+	\item \textbf{\{delivering, ClientID, OrderID, Source, Destination, Weight \}}: this is the state of the drone while it's delivering a package, it can start or propagate the messages of the election.
 	\item \textbf{failedOnline}: in this state the drone can't move but can send and receive messages.
 	\item \textbf{failedOffline}: in this state the drone can't move and can't send and receive messages.
 \end{itemize}

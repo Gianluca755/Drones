@@ -92,7 +92,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		    true -> io:format("Drone ~w going to recharge.~n", [DroneID]),
 		            spawn(drone, goToRecharge, [self(), DroneBattery, DronePosition, RechargingStations]),
 		            drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, busy, -1)
+			            RechargingStations, charging, -1)
 		    end ;
 
 
@@ -104,6 +104,9 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
                                 DronePosition, ?BATTERY_CAPACITY, RechargingStations, idle, 0 ) ;
 
+        % crashOnline -> % if in delivery send message with ack to neighbour(one at a time) else send to manager
+        % crashOffline ->
+
 %%%%%% messages relative to orders %%%%%%%%%%%%%
 
 		{ makeOrder, _PidClient, _ClientID, _OrderID, _Description } = Msg ->
@@ -113,11 +116,11 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			InitElection! Msg ; % exit at bottom
 
 
-		{elected, ClientID, OrderID, Source, Destination} ->
+		{elected, ClientID, OrderID, Source, Destination, Weight} ->
 			Manager_Server_Addr ! {inDelivery, DroneID, ClientID, OrderID, {}}, % notify the manager
             spawn(drone, droneDelivery, [self(), DronePosition, Source, Destination, ClientID, OrderID]),
             drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, busy, LowBatteryCounter) ;
+			            RechargingStations, {delivering, ClientID, OrderID, Source, Destination, Weight }, LowBatteryCounter) ;
 
         % notify manager and free drone
         {delivered, ClientID, OrderID} ->
@@ -127,14 +130,13 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		electionFailed ->
-
 		    spawn(drone, checkNeighbour, [NeighbourList, [], DroneID, self(), Manager_Server_Addr]); % exit at bottom
 
 
 		{excessiveWeight, ClientID, OrderID} ->
 			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]); % exit at bottom
 
-		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} }  ->
+		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} } ->
 			%io:format("################"),
 			Addr ! {result, self(), ClientID, OrderID, {Source, Destination, Weight}}
 
@@ -164,11 +166,12 @@ droneDelivery(DroneAddr, DronePosition, Source, Destination, ClientID, OrderID) 
     timer:sleep(DistanceToPackage *1000),
 
     DroneAddr ! {newPosition, Source}, % notify drone, that will change position
+    DroneAddr ! {modifyBatteryCharge, DistanceToPackage},
 
     timer:sleep(DistanceOfDelivery *1000),
 
-    DroneAddr ! {modifyBatteryCharge, DistanceToPackage + DistanceOfDelivery }, % pass the battery level to subctract
     DroneAddr ! {newPosition, Destination},     % notify new position
+    DroneAddr ! {modifyBatteryCharge, DistanceOfDelivery }, % pass the battery level to subctract
     DroneAddr ! {delivered, ClientID, OrderID}  % notify order completed
 
 .
