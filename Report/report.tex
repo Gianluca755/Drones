@@ -2,6 +2,8 @@
 \usepackage[top=25mm, bottom=25mm]{geometry}	% layout margin
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
+\usepackage{amsfonts}
+
 
 \renewcommand{\labelenumii}{\arabic{enumi}.\arabic{enumii}} % for multilevel list
 
@@ -17,7 +19,7 @@
 \begin{titlingpage}
 \maketitle
 \begin{abstract}
-The goal of this project is the creation of a network of drones to satisfy the delivery requests of clients, the drones, the client and all the other entities required for the proper operation of the system will be implemented in Erlang.
+The goal of this project is creation of a simulation of a network of drones that satisfy the delivery requests of packages from clients. The entities in this project are the clients, the servers that offer important functionalities, the drones and the recharging stations.
 \end{abstract}
 \end{titlingpage}
 
@@ -57,6 +59,8 @@ A client can send a request to the broker server for the delivery of a package f
 After a drone refused three orders due to the low battery, it will go to the recharging station, this will mitigate but not prevent the refuse of a package by the fleet; the manager will handle the case by retrying.
 
 A drone can crash at any point in time, if it was able to signal the fail, another drone will be selected to transport the broken drone to the nearest charging station, if the broken drone was satisfying a request a second drone will be selected to complete the task.
+
+It is not required to consider security problems or Byzantine behaviour of the drones.
 
 
 \section{Structure of the implementation}
@@ -216,12 +220,11 @@ The following are the non-functional requirements required by the project:
 \item the minimum weight of a package it's 0 grams and it can't weigh more than 1500 grams;
 \item there are no restrictions on the movements of the drones through the map or their position on the map;
 \item there are no restrictions on the position of the source or destination of the delivery request;
-\item it is not required to consider security problems or Byzantine behaviour of the drones;
 \item the system must be able to recover from the failure of a drone or a server;
 %\item a drone has to respond to messages from other drones or the management servers within 10 seconds or it will be considered dead;
-\item it's important for following transparencies to be present:
+\item it's important that the following transparencies are present:
 	\begin{itemize}
-	\item \textbf{concurrency}: only one drone will be selected to carry out the delivery of the package;
+	\item \textbf{concurrency}: only one drone will be selected to carry out the delivery of the package, and multiple drones are executing the delivery and the fleet of drones is running multiple election concurrently;
 	\item \textbf{reconfiguration}: the entrance of a new drone in the network must have a low overhead;
 	\item \textbf{failure}: if a drone crashes the delivery must be completed smoothly for the client;
 	\item \textbf{performance and scaling}: the system must be able to scale smoothly when adding more drones;
@@ -512,10 +515,19 @@ The tests are in the folder \textsf{Tests} with one file for every top level ent
 	\end{enumerate}
 
 \item \textbf{Election of a drone to carry out a task}:
+	\begin{enumerate}
+	\item \textsf{} ::
+	\end{enumerate}
 
 \item \textbf{Client make a delivery request which is carried out}
+	\begin{enumerate}
+	\item \textsf{} ::
+	\end{enumerate}
 
 \item \textbf{Support for a crashed drone while it is idle}:
+	\begin{enumerate}
+	\item \textsf{} ::
+	\end{enumerate}
 \item \textbf{Support for a crashed drone after it has been elected}:
 
 \end{enumerate}
@@ -540,27 +552,23 @@ The following functionalities were not implemented:
 
 
 \subsection{Non-functional requirements}
-The system that we have developed satisfies the functional requirements defined in section \ref{nfunc-req}.
+The system that we have developed partially satisfies the functional requirements defined in section \ref{nfunc-req}.
 
-The following are the non-functional requirements required by the project:
 \begin{itemize}
-\item the minimum weight of a package it's 0 grams and it can't weigh more than 1500 grams;
-\item there are no restrictions on the movements of the drones through the map or their position on the map;
-\item there are no restrictions on the position of the source or destination of the delivery request;
-\item it is not required to consider security problems or Byzantine behaviour of the drones;
-\item the system must be able to recover from the failure of a drone or a server;
-%\item a drone has to respond to messages from other drones or the management servers within 10 seconds or it will be considered dead;
-\item it's important for following transparencies to be present:
+\item[\checkmark] the minimum weight of a package it's 0 grams and it can't weigh more than 1500 grams;
+\item[\checkmark] there are no restrictions on the movements of the drones through the map or their position on the map;
+\item[\checkmark] there are no restrictions on the position of the source or destination of the delivery request;
+\item[$\times$] the system must be able to recover from the failure of a drone or a server (the system is able to handle the failure of drones but the case of failure of a server is not completely implemented);
+
+\item the transparencies that the system should offer are:
 	\begin{itemize}
-	\item \textbf{concurrency}: only one drone will be selected to carry out the delivery of the package;
-	\item \textbf{reconfiguration}: the entrance of a new drone in the network must have a low overhead;
-	\item \textbf{failure}: if a drone crashes the delivery must be completed smoothly for the client;
-	\item \textbf{performance and scaling}: the system must be able to scale smoothly when adding more drones;
-	\item \textbf{location}: the position of the drones is unknown to the clients.
+	\item[\checkmark] \textbf{concurrency}: only one drone will be selected to carry out the delivery of the package, and multiple drones are executing the delivery and the fleet of drones is running multiple election concurrently;
+	\item[\checkmark] \textbf{reconfiguration}: the entrance of a new drone in the network must have a low overhead;
+	\item[$\times$] \textbf{failure}: if a drone crashes the delivery must be completed smoothly for the client;
+	\item[\checkmark] \textbf{performance and scaling}: the system must be able to scale smoothly when adding more drones;
+	\item[\checkmark] \textbf{location}: the position of the drones is unknown to the clients.
 	\end{itemize}
 \end{itemize}
-
-
 
 
 
