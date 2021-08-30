@@ -22,7 +22,7 @@
 The goal of this project is creation of a simulation of a network of drones that satisfy the delivery requests of packages from clients. The entities in this project are the clients, the servers that offer important functionalities, the drones and the recharging stations.
 \end{abstract}
 \end{titlingpage}
-
+\tableofcontents
 \chapter{Introduction}\label{ch:intro}
 
 %In this chapter you describe the main problem, and an idea of the solution. It is not necessary to be very detailed or formal, but it is important to explain which are the main aims and issues from the point of view of Distributed Systems:
@@ -115,7 +115,7 @@ Note: the criterion used for the decision of the node is based on distances inst
 
 \section{Test cases}
 
-To test our system we'll use a program that simulates the environment and spawns drones in random positions and with random requests from clients.
+
 
 The test cases that will be analysed are listed below:\\
 
@@ -248,7 +248,7 @@ The Erlang modules used in the implementation of the system are:
 \item \textbf{client.erl}: this module contains all the functions needed by the client to make a delivery request and to query the status of its delivery;
 \item \textbf{drone.erl}: this module contains all the functions needed by the drone to exchange messages with other drones for the election and with the management server to start the election and to update the status of the delivery;
 \item \textbf{election.erl}: this module contains all the functions needed to elect a drone for the delivery and to exchange messages with the drones to achieve this goal;
-\item \textbf{environment.erl}: the role of this module is to set up the broker and the manager servers and to spawn the clients and the drones;
+
 \item \textbf{manager.erl}: this module contains all the functions needed by the manager server to handle the join of a new drone, to start the election procedure and to update the relative drone table and order status;
 \item \textbf{utils.erl}: this module contains some functions that are useful for multiple other modules.
 \end{itemize}
@@ -441,7 +441,7 @@ The basic (tier 1) functionalities that the system must offer are:
 \begin{itemize}
 \item support for a dynamic number of clients and each one can make multiple delivery requests and query the broker for the status of the order;
 \item broker and manager handle the orders and have a replica backup;
-\item the fleet is made by a dynamic number of drones, they may fail; the drones carry the packages.
+\item the fleet is made of a dynamic number of drones, they may fail, the drones role is to carry the packages.
 \end{itemize}
 
 The extended (tier 2) functionalities are:
@@ -461,7 +461,7 @@ The extended (tier 2) functionalities are:
 %Important choices about implementation should be described here; e.g., peculiar data structures.
 \section{General aspects}
 As stated before the used language is Erlang. A mention is due to the general schema used to create finite state machine (FSM) with concurrent auxiliary processes.
-In more details: there is a main loop process for modelling the FSM, this process spawns various auxiliary processes like timers or communicators which can, depending on the function, signalling the final result at the main process or modifying a shared data structure of the main process.
+In more details: there is a main loop process for modelling the FSM, this process spawns various auxiliary processes like timers or communicators which can, depending on the function, signal the final result at the main process or modifying a shared data structure of the main process.
 
 For example, when a client ask the broker the status of an order, the broker will spawn an auxiliary process that will find the information and send it to the client.
 An other example is that a server needs to replicate the data to the backup, so the primary server will spawn an auxiliary process that will contact the backup which will also spawn a process, the two auxiliary processes will communicate and update the data without blocking the main processes.
