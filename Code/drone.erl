@@ -119,7 +119,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 
 
-		{elected, ClientID, OrderID, Source, Destination} ->
+		{elected, ClientID, OrderID, Source, Destination, Weight} ->
 			io:format("Drone ~w has been elected.~n", [DroneID]),
 
 			Manager_Server_Addr ! {inDelivery, DroneID, ClientID, OrderID, {}}, % notify the manager
@@ -166,7 +166,9 @@ droneDelivery(DroneAddr, DronePosition, Source, Destination, ClientID, OrderID) 
     % trunc for converting to int
     DistanceToPackage = trunc(math:ceil(math:sqrt( math:pow( P1-S1, 2 ) + math:pow( P2-S2, 2 )))),
     DistanceOfDelivery = trunc(math:ceil(math:sqrt( math:pow( S1-D1, 2 ) + math:pow( S2-D2, 2 )))),
-	%io:format("DistanceToPackage: ~w~n", [DistanceToPackage]),
+
+	io:format("DronePosition: ~w~nDistanceToPackage: ~w~nDistanceOfDelivery: ~w~n", [DronePosition, DistanceToPackage, DistanceOfDelivery]),
+
     % since speed is 1 per second, Distance is also time to wait
     timer:sleep(DistanceToPackage *1000),
 
@@ -175,9 +177,9 @@ droneDelivery(DroneAddr, DronePosition, Source, Destination, ClientID, OrderID) 
 
     timer:sleep(DistanceOfDelivery *1000),
 
-    DroneAddr ! {newPosition, Destination},     % notify new position
+    DroneAddr ! {newPosition, Destination},                 % notify new position
     DroneAddr ! {modifyBatteryCharge, DistanceOfDelivery }, % pass the battery level to subctract
-    DroneAddr ! {delivered, ClientID, OrderID}  % notify order completed
+    DroneAddr ! {delivered, ClientID, OrderID}              % notify order completed
 
 .
 

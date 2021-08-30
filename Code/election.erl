@@ -50,9 +50,15 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
     % {-1, {}, 9999} is for the case when the drone can't deliver for some reason different from the weight
     % {-2, {}, 9999} is for the case when the drone can't deliver because the package weight too much
 
+    if  % handle the format of the state of the drone
+        is_tuple(DroneStatus) -> [Head, _Tail] = tuple_to_list(DroneStatus);
+        true -> Head = DroneStatus
+    end,
+
+
     if
         % drone busy, doesn't participate (implicit opt out)
-        DroneStatus == {delivering, _, _, _, _, _} -> CompleteCandidates = Candidates ;
+        Head == delivering -> CompleteCandidates = Candidates ;
 
         % package too heavy, explicit opt out of this drone from the election
         Weight > SupportedWeight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
@@ -126,9 +132,14 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
     % {-1, 9999} is for the case when the drone can't deliver for some reason different from the weight
     % {-2, 9999} is for the case when the drone can't deliver because the package weight too much
 
+    if  % handle the format of the state of the drone
+        is_tuple(DroneStatus) -> [Head, _Tail] = tuple_to_list(DroneStatus);
+        true -> Head = DroneStatus
+    end,
+
     if
         % drone busy, doesn't participate (implicit opt out)
-        DroneStatus == {delivering, _, _, _, _, _} -> CompleteCandidates = Candidates ;
+        Head == delivering -> CompleteCandidates = Candidates ;
 
         % package too heavy, explicit opt out of this drone from the election
         Weight > SupportedWeight -> CompleteCandidates = [ {-2, {}, 9999}| Candidates] ;
