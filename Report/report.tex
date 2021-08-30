@@ -468,6 +468,7 @@ An other example is that a server needs to replicate the data to the backup, so 
 
 This choice has been made to improve performance and simplify the code since modelling an interaction between components is easier to do using a sequential procedure with blocking calls.
 
+
 \section{Data storage for servers}
 Currently the replication of the server function only as a backup there is no automatic takeover nor failback.
 
@@ -570,9 +571,9 @@ The functionalities for handling the following situations are not complete:
 %\item the many entities of our system initially were all on the same Erlang machine but we have divided each one of them in an container to better simulate the distributed architecture of the system; (to expand)
 %\item the broken drone can send a message to he management server and it will elect another drone to move the broken one to a repairing station, in our system the broken drone stays in the repair station but the system can be expanded and after a certain amount of time the drone can be considered repaired and can request to join the network again.
 %\end{itemize}
-The partial implementation of the backup system required various attempt and it consumed more time than estimated.
+The partial implementation of the backup system required various attempt and it consumed more time than estimated. As consequence the implemented system offers only a limited set of functionalities.
 
-The whole system testing is insufficient, complex situation, unthought of, may arise.
+The basic functionalities have been tested however the whole system testing is insufficient, complex situation, unthought of, may arise.
 
 \section{System extensions}
 The possible extensions to our system are:
@@ -583,7 +584,7 @@ The possible extensions to our system are:
 	\item Security concerns should be addressed, in all the parts of the system.
 	\item The backup system could be improved with more servers, this can be achieved not by adding the backup server's addresses in the clients, but by a proxy server that choose the leader of the various broker servers. The broker servers can be configured with a master slave configuration or some more efficient solution like data partitioning. The proxy server can act as load balancer, accordingly to the configuration chosen.
 	\item If the manager has information about the supported weight of the drones, it can avoid send false alert to an operator, when the delivery fails due to occupied drones.
-	\item The selection of a drone to carry out the delivery, done by election, is certainly not weighting on the manager but allows only for a simple scheduling strategy; the case where the manager act as a controller of drones should be explored due to the efficient scheduling strategies that could be implemented for the deliveries. Moreover a controller manager would be able to determine how many and which type of drones should be flying in a particular moment.
+	\item The selection of a drone to carry out the delivery, done by election, is certainly not weighting on the manager but allows only for simple scheduling strategies; the case where the manager act as a controller of drones should be explored due to the efficient scheduling strategies that could be implemented for the deliveries. Moreover a controller manager would be able to determine how many and which type of drones should be flying in a particular moment.
 \end{itemize}
 
 
