@@ -21,16 +21,13 @@ startOrder() ->
     io:format("PidClient: ~w~n", [PidClient]),
 
 
-	Drone1 = spawn(drone, start, [PrimaryManagerAddr, 1, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 1 is ID, 60 is supported weight
-	PrimaryManagerAddr ! { joinRequest, 1, Drone1 },
+	spawn(drone, start, [PrimaryManagerAddr, 1, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 1 is ID, 60 is supported weight
     timer:sleep(200),
 
-	Drone2 = spawn(drone, start, [PrimaryManagerAddr, 2, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 2 is ID, 60 is supported weight
-	PrimaryManagerAddr ! { joinRequest, 2, Drone2 },
+	spawn(drone, start, [PrimaryManagerAddr, 2, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 2 is ID, 60 is supported weight
     timer:sleep(200),
 
-    Drone3 = spawn(drone, start, [PrimaryManagerAddr, 3, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 3 is ID, 60 is supported weight
-	PrimaryManagerAddr ! { joinRequest, 3, Drone3 },
+    spawn(drone, start, [PrimaryManagerAddr, 3, 60, {rand:uniform(100),rand:uniform(100)}, [{1,1}]]), % 3 is ID, 60 is supported weight
 
 
     io:format("Drone syncronization ~n"),
