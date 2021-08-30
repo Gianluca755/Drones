@@ -525,31 +525,12 @@ The tests are in the folder \textsf{Tests} with one file for every top level ent
 	\item \textsf{test6:startOrder()} :: this is the compete test for the basic case.
 	\end{enumerate}
 
-\item \textbf{Support for a crashed drone while it is idle}:
+\item \textbf{Support for a crashed drone}:
 	\begin{enumerate}
-	\item \textsf{} ::
+		\item the case where a drone crashes during the join request to the manager server. In this case the is no problem since the interaction doesn't require keeping a state, so the drone can retry at any time;
 	\end{enumerate}
-\item \textbf{Support for a crashed drone after it has been elected}:
 
 \end{enumerate}
-
-Critical situations:
-\begin{itemize}
-	\item the case where a drone crashes while it's idle;
-	\item the case where a drone crashes after it has been selected to move a package but it has not picked up the package yet;
-	\item the case where a drone crashes after it has picked up the package and it's delivering it to point B;
-	\item the case where a drone crashes after it has given its availability for election to the network;
-	\item the case where no drone is available to deliver a package;
-	\item the case where a drone crashes during the join request to the manager server.
-\end{itemize}
-
-The following functionalities were not implemented:
-\begin{itemize}
-	\item the function for handling when a drone is out of battery power due to misreading of the sensor or strong wind;
-\end{itemize}
-
-
-
 
 
 \subsection{Non-functional requirements}
@@ -571,6 +552,15 @@ The system that we have developed partially satisfies the functional requirement
 	\end{itemize}
 \end{itemize}
 
+\section{Incomplete functionalities}
+
+The functionalities for handling the following situations are not complete:
+\begin{itemize}
+	\item if a drone is out of battery power due to misreading of the sensor or strong wind;
+	\item if a drone crashes while it is in idle, the neighbour drones will notice the situation at the next election and consider the drone offline;
+	\item if a drone crashes after it has picked up the package;
+	\item if a drone crashes after it has been selected to move a package but it has not picked up the package yet.
+\end{itemize}
 
 
 \chapter{Conclusions}
@@ -582,13 +572,13 @@ The system that we have developed partially satisfies the functional requirement
 %\end{itemize}
 The partial implementation of the backup system required various attempt and it consumed more time than estimated.
 
-The whole system testing is insufficient, complex situation unthought of, may arise.
+The whole system testing is insufficient, complex situation, unthought of, may arise.
 
 \section{System extensions}
 The possible extensions to our system are:
 \begin{itemize}
 	\item Broker support for multiple manager servers for various fleets of drones.
-	\item Support for warehouses where the drones can stay
+	\item Support for warehouses where the drones can stay and "rest".
 	\item Separation of recharging station from the repairing station.
 	\item Security concerns should be addressed, in all the parts of the system.
 	\item The backup system could be improved with more servers, this can be achieved not by adding the backup server's addresses in the clients, but by a proxy server that choose the leader of the various broker servers. The broker servers can be configured with a master slave configuration or some more efficient solution like data partitioning. The proxy server can act as load balancer, accordingly to the configuration chosen.
