@@ -10,7 +10,7 @@
 %-export([connect_to_drones/5, requestNewDrone/6, checkNeighbour/5, drone_Loop/8]).
 
 -define(BATTERY_CAPACITY, 500). % battery expressed as remaining distance
--define(RECHARGE_SPEED, 5).     % seconds needed to recharge the power equivalent to 1 move
+-define(RECHARGE_SPEED, 1).     % seconds needed to recharge the power equivalent to 1 move
 
 start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingStations) ->
 
@@ -89,7 +89,8 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		    LowBatteryCounter == -1 -> true; % in case the drone is already going to recharge
 		    LowBatteryCounter < 2 -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
 		                                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter + 1) ;
-		    true -> spawn(drone, goToRecharge, [self(), DroneBattery, DronePosition, RechargingStations]),
+		    true -> io:format("Drone ~w going to recharge.~n", [DroneID]),
+		            spawn(drone, goToRecharge, [self(), DroneBattery, DronePosition, RechargingStations]),
 		            drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
 			            RechargingStations, busy, -1)
 		    end ;
@@ -105,8 +106,8 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 %%%%%% messages relative to orders %%%%%%%%%%%%%
 
-		{ makeOrder, PidClient, ClientID, OrderID, Description } = Msg ->
-		
+		{ makeOrder, _PidClient, _ClientID, _OrderID, _Description } = Msg ->
+
 			InitElection = spawn(election, initElection, [self(), DroneID, SupportedWeight, DronePosition, DroneBattery,
 			                         NeighbourList, RechargingStations]),
 			InitElection! Msg ; % exit at bottom
@@ -126,7 +127,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		electionFailed ->
-			
+
 		    spawn(drone, checkNeighbour, [NeighbourList, [], DroneID, self(), Manager_Server_Addr]); % exit at bottom
 
 
@@ -136,7 +137,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} }  ->
 			%io:format("################"),
 			Addr ! {result, self(), ClientID, OrderID, {Source, Destination, Weight}}
-			
+
 	end,
 
 	% NORMAL EXIT WITHOUT STATE MODIFICATION
@@ -169,30 +170,57 @@ droneDelivery(DroneAddr, DronePosition, Source, Destination, ClientID, OrderID) 
     DroneAddr ! {modifyBatteryCharge, DistanceToPackage + DistanceOfDelivery }, % pass the battery level to subctract
     DroneAddr ! {newPosition, Destination},     % notify new position
     DroneAddr ! {delivered, ClientID, OrderID}  % notify order completed
-	
+
 .
 
 goToRecharge(DroneAddr, DroneBattery, DronePosition, RechargingStations) ->
 
-	RecStation = election:findNearestRechargingStation(DronePosition, RechargingStations),
-	{S1,S2} = DronePosition,
-	%{D1,D2} = RecStation,
+	{P1,P2} = DronePosition,
 
-	%Distance = math:ceil(math:sqrt( math:pow( D1-S1, 2 ) + math:pow( D2-S2, 2 )) ),
-	Distance =round(RecStation),
-	% since speed is 1 per second, Distance is also time to wait
-    timer:sleep(Distance *1000),
-    DroneAddr ! {modifyBatteryCharge, Distance}, % pass the battery level to subctract
-    DroneAddr ! {newPosition, RecStation},      % notify new position
+	if
+		length(RechargingStations) == 0 ->
+			io:format("Error: There are no recharging stations~n") ;
+		true ->
+			Distances = lists:map(
+        	    fun(Station) -> {S1, S2} = Station, math:sqrt( math:pow( S1-P1, 2 ) + math:pow( S2-P2, 2 ) ) end,
+        	    % end lambda func
+        	    RechargingStations     % list for the map
+        	),
 
-    RemainingBattery = round(?BATTERY_CAPACITY - Distance - DroneBattery),
-	if 
-		RemainingBattery < 0 -> io:format("remaining battery negative ~w~n",[RemainingBattery]);
-	
-    	true -> timer:sleep( RemainingBattery * 1000 * ?RECHARGE_SPEED )
-	end,
-    DroneAddr ! rechargeCompleted
+   			Min = lists:min(Distances),
+   			MinIndex = index_of(Min, Distances),
+
+   			RecStation = lists:nth(MinIndex, RechargingStations),
+
+   		    Distance = trunc(math:ceil(Min)),
+
+   		    io:format("Drone going to Station: ~w, Distance: ~w~n", [RecStation, Distance]),
+
+   		    % since speed is 1 per second, Distance is also time to wait
+            timer:sleep(Distance * 1000),
+            DroneAddr ! {modifyBatteryCharge, Distance}, % pass the battery level to subctract
+            DroneAddr ! {newPosition, RecStation},       % notify new position
+
+
+            RemainingBattery = DroneBattery - Distance,
+            if
+		        RemainingBattery < 0 -> io:format("Remaining battery negative ~w~n",[RemainingBattery]);
+
+    	        true -> timer:sleep( (?BATTERY_CAPACITY - RemainingBattery) * 1000 * ?RECHARGE_SPEED )
+	        end,
+
+            DroneAddr ! rechargeCompleted
+
+	end
 .
+
+
+index_of(Item, List) -> index_of(Item, List, 1).
+
+index_of(_, [], _)  -> not_found;
+index_of(Item, [Item|_], Index) -> Index;
+index_of(Item, [_|Tl], Index) -> index_of(Item, Tl, Index+1).
+
 
 % notify manager and await for confirmation
 notifyManager(Manager_Server_Addr, ClientID, OrderID) ->
@@ -265,12 +293,12 @@ requestNewDrone(DronesCandidateToConnection, DronesAlreadyConnectedTo, MyDroneID
 
 % check that all the neighbours are alive, remove dead, if < 2 ask more to manager
 checkNeighbour(NeighbourList, OnlineDrones, MyDroneID, MyDroneAddr, ManagerAddr) ->
-	
+
     case NeighbourList of
 
         [X|Xs] ->   if
 					X=={}  -> 	MyDroneAddr ! {newList, OnlineDrones};
-						
+
 					true->	X ! {queryOnline, MyDroneAddr},
 
                    		receive online -> checkNeighbour(Xs, OnlineDrones ++ [X], MyDroneID, MyDroneAddr, ManagerAddr)

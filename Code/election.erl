@@ -242,16 +242,17 @@ extractID_Addr_Distance(X) ->
     {ElectedDroneID, ElectedPid, Distance}
 .
 
-% returns the distance to the nearest recharging station
+% returns the distance between the drone position and the nearest recharging station
 findNearestRechargingStation(Position, Stations) ->
     {P1, P2} = Position,
 	if
-		length(Stations) ==0 ->
+		length(Stations) == 0 ->
 			io:format("there are no recharging stations"), Stations;
 		true->
 			Distances = lists:map(
-        	fun(Station) -> {S1, S2} = Station, math:sqrt( math:pow( S1-P1, 2 ) + math:pow( S2-P2, 2 ) ) end,
-        	Stations
+        	    fun(Station) -> {S1, S2} = Station, math:sqrt( math:pow( S1-P1, 2 ) + math:pow( S2-P2, 2 ) ) end,
+        	    % end lambda func
+        	    Stations     % list for the map
         	),
    			lists:min(Distances)
 	end.

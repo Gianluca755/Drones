@@ -1,7 +1,7 @@
 -module(test4).
 -compile(export_all).
 
-% c
+% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]).
 
 startRecharge() ->
 
@@ -21,9 +21,9 @@ startRecharge() ->
                             1,                                      % drone ID
                             [],                                     % neighbours, it could ask the manager but not needed
                             60,                                     % supported weight
-                            {rand:uniform(100),rand:uniform(100)},  % initial position
+                            {7,7},                                  % initial position
                             500,                                    % battery life
-                            [{10,10}],                               % recharging station
+                            [{10,10}],                              % recharging station
                             idle,                                   % status of the drone
                             3                                       % low battery count
                             ]
