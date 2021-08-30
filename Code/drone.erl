@@ -9,8 +9,9 @@
 %-export([start/5]).
 %-export([connect_to_drones/5, requestNewDrone/6, checkNeighbour/5, drone_Loop/8]).
 
--define(BATTERY_CAPACITY, 500). % NEED TO BE INT ! battery expressed as remaining distance
--define(RECHARGE_SPEED, 1).     % NEED TO BE INT ! seconds needed to recharge the power equivalent to 1 move
+-define(BATTERY_CAPACITY, 500).     % NEED TO BE INT ! battery expressed as remaining distance
+-define(RECHARGE_SPEED, 1).         % NEED TO BE INT ! seconds needed to recharge the power equivalent to 1 move
+-define(CONSTANT_MOVEMENT, 100).    % NEED TO BE INT ! default 1000
 
 start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingStations) ->
 
@@ -50,7 +51,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			 []     -> timer:sleep(1000), Manager_Server_Addr ! { joinRequest, DroneID, self() } ;
 			 _Other -> skip
 			 end,
-			 io:format("Drone ~w, ID ~w, List : ~w~n", [DroneID, self(), NewNeighbourList]),
+			 io:format("Drone ~w, PID ~w, List : ~w~n", [DroneID, self(), NewNeighbourList]),
 			 drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight, DronePosition, DroneBattery,
 			            RechargingStations, DroneStatus, LowBatteryCounter);
 
@@ -63,7 +64,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			Condition = lists:member(NeighbourDroneAddr, NeighbourList),
 			if
 			Condition == false ->
-			    io:format("Drone ~w, ID ~w, List : ~w~n", [DroneID, self(), NeighbourList ++ [NeighbourDroneAddr]]),
+			    io:format("Drone ~w, PID ~w, List : ~w~n", [DroneID, self(), NeighbourList ++ [NeighbourDroneAddr]]),
 			    drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight,
 			                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter ) ;
 
@@ -87,7 +88,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		lowBattery ->
 		    if
 		    LowBatteryCounter == -1 -> true; % in case the drone is already going to recharge
-		    LowBatteryCounter < 2 -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
+		    LowBatteryCounter < 2   -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
 		                                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter + 1) ;
 		    true -> io:format("Drone ~w going to recharge.~n", [DroneID]),
 		            spawn(drone, goToRecharge, [self(), DroneBattery, DronePosition, RechargingStations]),
@@ -104,7 +105,13 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
                                 DronePosition, ?BATTERY_CAPACITY, RechargingStations, idle, 0 ) ;
 
-        % crashOnline -> % if in delivery send message with ack to neighbour(one at a time) else send to manager
+%        crashOnline ->  if
+%                        DroneStatus == idle or DroneStatus == recharging -> io:format("crashOnline drone: ~w.~n", [DroneID]),
+%                                                                            exit("crashOnline") ;
+
+%                        DroneStatus == {delivering, _ClientID, _OrderID, _Source, _Destination, _Weight } ->
+%                            HandlerCrash(NeighbourList)
+%                       end;
 
         crashOffline -> io:format("crashOffline drone: ~w.~n", [DroneID]),
                         exit("crashOffline") ;
@@ -130,6 +137,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
         % notify manager and free drone
         {delivered, ClientID, OrderID} ->
             spawn(drone, notifyManager, [Manager_Server_Addr, ClientID, OrderID]),
+            io:format("Package number ~w from ~w delivered~n", [OrderID, ClientID]),
             drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
 			            RechargingStations, idle, LowBatteryCounter) ; % drone now free
 
@@ -170,12 +178,12 @@ droneDelivery(DroneAddr, DronePosition, Source, Destination, ClientID, OrderID) 
 	io:format("DronePosition: ~w~nDistanceToPackage: ~w~nDistanceOfDelivery: ~w~n", [DronePosition, DistanceToPackage, DistanceOfDelivery]),
 
     % since speed is 1 per second, Distance is also time to wait
-    timer:sleep(DistanceToPackage *1000),
+    timer:sleep(DistanceToPackage * ?CONSTANT_MOVEMENT),
 
     DroneAddr ! {newPosition, Source}, % notify drone, that will change position
     DroneAddr ! {modifyBatteryCharge, DistanceToPackage},
 
-    timer:sleep(DistanceOfDelivery *1000),
+    timer:sleep(DistanceOfDelivery * ?CONSTANT_MOVEMENT),
 
     DroneAddr ! {newPosition, Destination},                 % notify new position
     DroneAddr ! {modifyBatteryCharge, DistanceOfDelivery }, % pass the battery level to subctract
@@ -207,7 +215,7 @@ goToRecharge(DroneAddr, DroneBattery, DronePosition, RechargingStations) ->
    		    io:format("Drone going to Station: ~w, Distance: ~w~n", [RecStation, Distance]),
 
    		    % since speed is 1 per second, Distance is also time to wait
-            timer:sleep(Distance * 1000),
+            timer:sleep(Distance * ?CONSTANT_MOVEMENT ),
             DroneAddr ! {modifyBatteryCharge, Distance}, % pass the battery level to subctract
             DroneAddr ! {newPosition, RecStation},       % notify new position
 

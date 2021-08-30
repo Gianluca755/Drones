@@ -490,7 +490,7 @@ The system is according to the transparencies declared in the section \ref{Syste
 
 \subsection{Functional requirements}
 The system that we have developed has been tested against the functional requirements defined in section \ref{func-req}.
-The tests are in the folder \textsf{Tests} with one file for every top level entry of the list below.
+The tests are in the folder \textsf{Tests} with one file for every top level entry of the list below. This tests obviously require the compilation of other parts the system.
 
 \begin{enumerate}
 \item \textbf{Request the status of a delivery}:
@@ -501,7 +501,7 @@ The tests are in the folder \textsf{Tests} with one file for every top level ent
 
 \item \textbf{A new drone joins the network}:
 	\begin{enumerate}
-	\item \textsf{test2:startDrones()} :: the test consists in 3 drones that attempt to join the network. The behaviour is quite complex since the first drone will have no neighbours and it will make an other attempt to connect after some time. In other cases a drone needs to prevent a self connection and the duplicates, this is complicated by the fact that a drone may crash while an other drone makes a connection attempt.
+	\item \textsf{test2:startDrones()} :: the test consists in 3 drones that attempt to join the network. The behaviour is quite variable due to interleaving since the first drone will have no neighbours and it will make an other attempt to connect after some time. In other cases a drone needs to prevent a self connection and the duplicates, this is complicated by the fact that a drone may crash while an other drone makes a connection attempt.
 	\end{enumerate}
 
 \item \textbf{Make a delivery request} (without testing the election part):
