@@ -20,7 +20,7 @@
 start(PrimaryManagerAddr, BckManagerAddr) ->
 
     Primary = spawn(broker, startPrimary, [PrimaryManagerAddr, BckManagerAddr]),
-    Bck = spawn(broker, startBck, [Primary, PrimaryManagerAddr, BckManagerAddr])
+    _Bck = spawn(broker, startBck, [Primary, PrimaryManagerAddr, BckManagerAddr])
 .
 
 startPrimary(PrimaryManagerAddr, BckManagerAddr) ->
@@ -158,7 +158,7 @@ handlerOrderPrimary(OrderTable, AddrRecord) ->
             {Source, Destination, Weight} = Description, % extract values
             ets:insert(OrderTable, { {ClientID, OrderID}, {Source, Destination, Weight,0,0, saved} } ),
             ClientAddress ! confirmedOrder , % send ack to the client
-			
+
             AddrRecord#addr.primaryManagerAddr ! Msg  % send order to the manager
             ;
         true -> updateTableStatus(OrderTable, {ClientID, OrderID}, Type) % Type is the new state
@@ -188,12 +188,12 @@ handlerOrderBck(OrderTable, AddrRecord, PrimaryHandlerAddr) ->
 respondQuery(Pid, OrderTable, ClientID, OrderID) ->
     case ets:lookup(OrderTable, {ClientID, OrderID}) of
         []               -> Pid ! orderNotPresent;
-        [{_Key, {_Source, _Destination, _Weight, DefaultDroneID, Time, Status} }] -> Pid ! Status
+        [{_Key, {_Source, _Destination, _Weight, _DefaultDroneID, _Time, Status} }] -> Pid ! Status
     end
 .
 
 updateTableStatus(Table, Key, NewStatus) ->
-	
+
     [{_Key, {Source, Destination, Weight, DefaultDroneID,Time, _Status}}] = ets:lookup(Table, Key),
     Result = ets:insert(Table, {Key, {Source, Destination, Weight, DefaultDroneID, Time ,NewStatus} } ), % overwrite
     if

@@ -1,7 +1,7 @@
 -module(test3).
 -compile(export_all).
 
-% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]). c(election). c(test3).
+% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]). c(election). c("../Tests/test3", [debug_info]).
 
 % make order but no drones
 startNoDrones() ->

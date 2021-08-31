@@ -1,13 +1,13 @@
 %% @author Andrea
 %% @doc @todo Add description to test5.
-% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]). c(election). c(test5,[debug_info]).
+% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]). c(election). c(test5,[debug_info]). c("../Tests/test5", [debug_info]).
 
 -module(test5).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
--compile(export_all).
+-export([startElection/0]).
 
 
 
@@ -24,6 +24,10 @@ startElection() ->
     P3 = {rand:uniform(11),rand:uniform(11)},
     io:format("Drone 1 Position: ~w~nDrone 2 Position: ~w~nDrone 3 Position: ~w~n", [P1, P2, P3]),
 
+    T1 = ets:new(electionTable1, [set, public]),
+    T2 = ets:new(electionTable2, [set, public]),
+    T3 = ets:new(electionTable3, [set, public]),
+
     Drone1 = spawn(drone, drone_Loop, [
                             self(),                                 % dummy pid for manager
                             1,                                      % drone ID
@@ -33,7 +37,8 @@ startElection() ->
                             500,                                    % battery life
                             [{10,10}],                              % recharging station
                             idle,                                   % status of the drone
-                            0                                       % low battery count
+                            0,                                      % low battery count
+                            T1
                             ]
     ),
 
@@ -46,7 +51,8 @@ startElection() ->
                             500,                                    % battery life
                             [{10,10}],                              % recharging station
                             idle,                                   % status of the drone
-                            0                                       % low battery count
+                            0,                                      % low battery count
+                            T2
                             ]
     ),
 
@@ -59,7 +65,8 @@ startElection() ->
                             500,                                    % battery life
                             [{10,10}],                              % recharging station
                             idle,                                   % status of the drone
-                            0                                       % low battery count
+                            0,                                      % low battery count
+                            T3
                             ]
     ),
 
@@ -81,26 +88,8 @@ startElection() ->
 
     %timer:sleep(1000),
 	% simulate manager for the confirmation of the completation of the delivery
-	receive {delivered, Pid, ClientID, OrderID, {}} -> Pid ! confirmDelivered end,
+	receive {delivered, Pid, _ClientID, _OrderID, {}} -> Pid ! confirmDelivered end,
 	ok
 .
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

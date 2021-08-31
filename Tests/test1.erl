@@ -1,7 +1,7 @@
 -module(test1).
 -compile(export_all).
 
-% c(manager). c(broker). c(client). c(utils).
+% c(manager). c(broker). c(client). c(utils). c("../Tests/test1", [debug_info]).
 
 % query of a non existing order
 startNoOrder() ->

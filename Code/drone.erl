@@ -161,7 +161,8 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		    [] ->   Handler = spawn(election,
 		                nonInitElection,
 		                [self(), DroneID, SupportedWeight, DronePosition, DroneBattery, NeighbourList, RechargingStations, DroneStatus]
-		            ) ;
+		            ),
+		            ets:insert( ElectionTable, { {ClientID, OrderID} , Handler }) ;
 		    [{_Key, Handler}] -> true
 		    end,
 

@@ -2,7 +2,7 @@
 -compile(export_all).
 
 
-% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]).
+% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]). c("../Tests/test2", [debug_info]).
 
 
 % 3 drones join the network

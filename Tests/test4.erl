@@ -1,7 +1,7 @@
 -module(test4).
 -export([startRecharge/0]).
 
-% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]).
+% c(manager,[debug_info]). c(broker,[debug_info]). c(client,[debug_info]). c(utils). c(drone,[debug_info]). c("../Tests/test4", [debug_info]).
 
 startRecharge() ->
 

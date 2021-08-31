@@ -98,7 +98,7 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
 
     { election, Parent, ClientID, OrderID, {Source, Destination, Weight} } = Wave, % select parent for the echo algo
 
-    Children = list:delete(Parent, Neighbours),
+    Children = lists:delete(Parent, Neighbours),
 
     Wave2 = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
 
@@ -205,7 +205,7 @@ delete(Parent, Neighbours, Stored)->
 extract(Received, Stored)->
 	case Received of
 		[]     -> Stored;
-   		[X|Xs] -> {result, ElectedDroneID, ElectedPid, Distance, {_ClientID, _OrderID, Weight} } = X,
+   		[X|Xs] -> {result, ElectedDroneID, ElectedPid, Distance, {_ClientID, _OrderID, _Weight} } = X,
 				  extract(Xs, Stored ++ [{ElectedDroneID, ElectedPid, Distance}])
 	end
 .
@@ -215,7 +215,7 @@ receiveN(N, Received) ->
 
     if
         N == 0 -> Received;
-        N > 0  -> receive {result, Addr, ClientID, OrderID, {Source, Destination, Weight}}= Msg -> receiveN(N-1, [Msg | Received])
+        N > 0  -> receive {result, _Addr, _ClientID, _OrderID, {_Source, _Destination, _Weight}}= Msg -> receiveN(N-1, [Msg | Received])
                   after (3 * 60 * 1000) -> 'EXIT'
                   end
     end
