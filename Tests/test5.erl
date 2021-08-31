@@ -42,8 +42,41 @@ startElection() ->
                             ]
     ),
 
+	Drone2 = spawn(drone, drone_Loop, [
+                            self(),                                 % dummy pid for manager
+                            2,                                      % drone ID
+                            [],                                     % neighbours, it could ask the manager but not needed
+                            60,                                     % supported weight
+                            P2,      % initial position
+                            500,                                    % battery life
+                            [{10,10}],                              % recharging station
+                            idle,                                   % status of the drone
+                            0,                                      % low battery count
+                            T2
+                            ]
+    ),
+
+	Drone3 = spawn(drone, drone_Loop, [
+                            self(),                                 % dummy pid for manager
+                            3,                                      % drone ID
+                            [],                                     % neighbours, it could ask the manager but not needed
+                            60,                                     % supported weight
+                            P3,      % initial position
+                            500,                                    % battery life
+                            [{10,10}],                              % recharging station
+                            idle,                                   % status of the drone
+                            0,                                      % low battery count
+                            T3
+                            ]
+    ),
+
+	Drone1 ! {newList,[Drone2,Drone3]},
+	Drone2 ! {newList,[Drone1,Drone3]},
+	Drone3 ! {newList,[Drone2,Drone1]},
 
 
+    io:format("Delivery from ~w to ~w~n", [{7,8}, {8,7}]),
+    
 	timer:sleep(2000),
 	Drone1 ! {makeOrder,
                 self(),     % dummy ClientAddress
@@ -54,6 +87,7 @@ startElection() ->
 	                7       % weight
 	            }
 	         },
+
 
 
     %timer:sleep(1000),

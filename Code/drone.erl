@@ -154,6 +154,9 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		{excessiveWeight, ClientID, OrderID} ->
 			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]); % exit at bottom
 
+
+%%%%%% messages for the elelections in progress %%%%%%
+
 		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} } = Wave ->
             % in the case the wave for a particular election is the first, create a new handler,
             % otherwise turn the message to the previous handler
@@ -166,7 +169,13 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		    [{_Key, Handler}] -> true
 		    end,
 
-		    Handler ! Wave
+		    Handler ! Wave ;
+
+		{result, _ElectedDroneID, _ElectedPid, _Distance, {ClientID, OrderID} } = Msg ->
+		    case ets:lookup(ElectionTable, {ClientID, OrderID}) of
+		    [] -> io:format("Error in election, received a result messages without election. ~n") ;
+		    [{_Key, Handler}] -> Handler ! Msg
+		    end
 
 	end,
 

@@ -364,7 +364,7 @@ From drones to drones
 	\item Response query: "online".
 	This message is the response at the previous query.
 
-	\item Echo election propagation: "\{election, HandlerAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}".
+	\item Echo election propagation: "\{election, DroneAddress, ClientID, OrderID, \{Source, Destination, Weight\}\}".
 	This message is sent in the first phase of the election.
 
 	\item Echo election back-propagation: "\{result, ElectedDroneID, ElectedPid, Distance, \{ClientID, OrderID\}\}".

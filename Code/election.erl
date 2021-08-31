@@ -17,7 +17,7 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
     % decompose order
     { makeOrder, _PidClient, ClientID, OrderID, {Source, Destination, Weight} } = Order,
 
-    NewOrder = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
+    NewOrder = { election, DroneAddr, ClientID, OrderID, {Source, Destination, Weight} }, % the replies will go the the main process that will turn them here
 
     sendToAll(NewOrder, Neighbours),            % io:format("NeighInit~w~n", [Neighbours]),
 
@@ -98,7 +98,7 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
 
     Children = lists:delete(Parent, Neighbours),
 
-    Wave2 = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
+    Wave2 = { election, DroneAddr, ClientID, OrderID, {Source, Destination, Weight} },
 
 
     sendToAll(Wave2, Children),
@@ -156,7 +156,7 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
     {ElectedDroneID, ElectedPid, ElectedDistance} = DecidedDrone,
 
     % push decision to parent
-    Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance}
+    Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance, {ClientID, OrderID}}
 
 %% OLD CODE
     % the election decision will be communicated with direct connection, to this handler which will send the message to
@@ -182,10 +182,10 @@ filter(Received, Stored) ->
 	 case Received of
 		[]     -> Stored;
    		[X|Xs] -> {Type, _, _, _, _} = X,
-    	if
+    	    if
        		Type == result -> filter(Xs, Stored ++ [X]);
         	true -> filter(Xs, Stored)
-    	end
+    	    end
 	 end
 .
 
@@ -204,7 +204,7 @@ delete(Parent, Neighbours, Stored)->
 extract(Received, Stored)->
 	case Received of
 		[]     -> Stored;
-   		[X|Xs] -> {result, ElectedDroneID, ElectedPid, Distance, {_ClientID, _OrderID, _Weight} } = X,
+   		[X|Xs] -> {result, ElectedDroneID, ElectedPid, Distance, {_ClientID, _OrderID} } = X,
 				  extract(Xs, Stored ++ [{ElectedDroneID, ElectedPid, Distance}])
 	end
 .
@@ -214,7 +214,7 @@ receiveN(N, Received) ->
 
     if
         N == 0 -> Received;
-        N > 0  -> receive {result, _Addr, _ClientID, _OrderID, {_Source, _Destination, _Weight}}= Msg -> receiveN(N-1, [Msg | Received])
+        N > 0  -> receive Msg -> receiveN(N-1, [Msg | Received])
                   after (3 * 60 * 1000) -> 'EXIT'
                   end
     end

@@ -1,0 +1,33 @@
+\contentsline {chapter}{Contents}{1}%
+\contentsline {chapter}{\chapternumberline {1}Introduction}{2}%
+\contentsline {section}{\numberline {1.1}Description of the application.}{2}%
+\contentsline {section}{\numberline {1.2}Structure of the implementation}{3}%
+\contentsline {section}{\numberline {1.3}System features}{3}%
+\contentsline {subsection}{Assumption}{3}%
+\contentsline {subsection}{Election Algorithm}{4}%
+\contentsline {section}{\numberline {1.4}Test cases}{4}%
+\contentsline {chapter}{\chapternumberline {2}Analysis}{6}%
+\contentsline {section}{\numberline {2.1}Functional requirements}{6}%
+\contentsline {section}{\numberline {2.2}Non-functional requirements}{7}%
+\contentsline {chapter}{\chapternumberline {3}Project}{8}%
+\contentsline {section}{\numberline {3.1}Logical architecture}{8}%
+\contentsline {subsection}{Modules used in the implementation}{8}%
+\contentsline {subsection}{Primary backup schema}{8}%
+\contentsline {section}{\numberline {3.2}The space of movement}{9}%
+\contentsline {section}{\numberline {3.3}Protocols and algorithms}{9}%
+\contentsline {subsection}{Status of an order}{9}%
+\contentsline {subsection}{Status of a drone}{9}%
+\contentsline {subsection}{Messages: formats and effects}{9}%
+\contentsline {subsection}{Election behaviour}{13}%
+\contentsline {section}{\numberline {3.4}Physical architecture and deployment}{13}%
+\contentsline {section}{\numberline {3.5}Development plan}{13}%
+\contentsline {chapter}{\chapternumberline {4}Implementation}{15}%
+\contentsline {section}{\numberline {4.1}General aspects}{15}%
+\contentsline {section}{\numberline {4.2}Data storage for servers}{15}%
+\contentsline {chapter}{\chapternumberline {5}Validation}{16}%
+\contentsline {section}{\numberline {5.1}Validation of the requirements}{16}%
+\contentsline {subsection}{Functional requirements}{16}%
+\contentsline {subsection}{Non-functional requirements}{17}%
+\contentsline {section}{\numberline {5.2}Incomplete functionalities}{18}%
+\contentsline {chapter}{\chapternumberline {6}Conclusions}{19}%
+\contentsline {section}{\numberline {6.1}System extensions}{19}%
