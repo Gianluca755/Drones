@@ -69,23 +69,21 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
             DroneAddr ! lowBattery ; % send a note the loop process of the drone
 
         % drone offer itself as candidate
-        true -> CompleteCandidates = [ {DroneID, self(), DistanceToPackage}| Candidates]
+        true -> CompleteCandidates = [ {DroneID, DroneAddr, DistanceToPackage}| Candidates]
     end,
 
     % choose the best between the initiator node and the neighbours
     DecidedDrone = localDecision(CompleteCandidates),
 
-    {ElectedPid, ElectedDroneID, _ElectedDistance} = DecidedDrone,
+    {ElectedDroneID, ElectedPid, _ElectedDistance} = DecidedDrone,
 	% io:format("DecidedDrone: ~w~n", [DecidedDrone]),
     % if there is no drone that can carry the weight check for -1, and alert main process of drone that will noitify the manager
     % ( the election doesn't flag the other cases where the fleet can't deliver because the manager will retry )
     if
         ElectedDroneID == -1 -> DroneAddr ! {excessiveWeight, ClientID, OrderID} ;
-        true -> % in case of direct connection otherwise propagate in simil broadcast
-
-                ElectedPid ! {elected, ClientID, OrderID, Source, Destination, Weight }
+        true -> ElectedPid ! {elected, ClientID, OrderID, Source, Destination, Weight}
+                % in case of direct connection otherwise propagate in simil broadcast
     end
-
 .
 
 
@@ -150,7 +148,7 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
             DroneAddr ! lowBattery ; % send a note the loop process of the drone
 
         % drone offer itself as candidate
-        true -> CompleteCandidates = [ {DroneID, self(), DistanceToPackage}| Candidates]
+        true -> CompleteCandidates = [ {DroneID, DroneAddr, DistanceToPackage}| Candidates]
     end,
 
     % choose the best between the initiator node and the neighbours
@@ -158,15 +156,16 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
     {ElectedDroneID, ElectedPid, ElectedDistance} = DecidedDrone,
 
     % push decision to parent
-    Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance},
+    Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance}
 
+%% OLD CODE
     % the election decision will be communicated with direct connection, to this handler which will send the message to
     % the main process of the drone.
     % Otherwise a backpropagation system needs to be inserted here
 
-    receive {elected, ClientID, OrderID, Source, Destination } = MsgElection -> DroneAddr ! MsgElection % let the drone handle it
-    after (3 * 60 * 1000) -> true % exit after 3m
-    end
+%    receive {elected, ClientID, OrderID, Source, Destination } = MsgElection -> DroneAddr ! MsgElection % let the drone handle it
+%    after (3 * 60 * 1000) -> true % exit after 3m
+%    end
 
 .
 
