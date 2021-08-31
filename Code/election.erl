@@ -17,9 +17,9 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
     % decompose order
     { makeOrder, _PidClient, ClientID, OrderID, {Source, Destination, Weight} } = Order,
 
-    NewOrder = { election, [DroneAddr], ClientID, OrderID, {Source, Destination, Weight} },
+    NewOrder = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
 
-    sendToAll(NewOrder, Neighbours), % io:format("NeighInit~w~n", [Neighbours]),
+    sendToAll(NewOrder, Neighbours),            % io:format("NeighInit~w~n", [Neighbours]),
 
     Results = receiveN(length(Neighbours), []), % io:format("ResultsInit: ~w~n", [Results]),
 
@@ -93,21 +93,19 @@ initElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, N
 % choose the best option and send to parent, wait for decision to propagate.
 
 nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery, Neighbours, RechargingStations, DroneStatus) ->
-    receive Wave -> 
-				%io:format("Drone syncronization ~n"),
-				true
+    receive Wave ->	true
     end,
 
     { election, Parent, ClientID, OrderID, {Source, Destination, Weight} } = Wave, % select parent for the echo algo
 
-    Children = delete(Parent, Neighbours,[]),
+    Children = list:delete(Parent, Neighbours),
 
-    Wave2 = { election, Parent ++ [DroneAddr], ClientID, OrderID, {Source, Destination, Weight} },
-	
+    Wave2 = { election, self(), ClientID, OrderID, {Source, Destination, Weight} },
+
 
     sendToAll(Wave2, Children),
     Results = receiveN(length(Children), []),
-	
+
     if % case where the await of the response took too much time
         Results == 'EXIT' -> DroneAddr ! electionFailed, exit("err");
         true -> true
@@ -160,7 +158,7 @@ nonInitElection(DroneAddr, DroneID, SupportedWeight, DronePosition, DroneBattery
     {ElectedDroneID, ElectedPid, ElectedDistance} = DecidedDrone,
 
     % push decision to parent
-    hd(Parent) ! {result, ElectedDroneID, ElectedPid, ElectedDistance},
+    Parent ! {result, ElectedDroneID, ElectedPid, ElectedDistance},
 
     % the election decision will be communicated with direct connection, to this handler which will send the message to
     % the main process of the drone.
@@ -197,7 +195,7 @@ delete(Parent, Neighbours, Stored)->
 		[]     -> Stored;
    		[X|Xs] ->%io:format("Parent: ~w~n", [Parent]), io:format("X: ~w~n", [X]),
 				 IsIn = lists:member(X, Parent),
-				  if 
+				  if
 					  IsIn ->delete(Parent, Xs, Stored);
 				  	  true ->delete(Parent, Xs, Stored ++ [X])
 				 end

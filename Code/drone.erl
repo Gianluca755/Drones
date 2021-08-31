@@ -15,6 +15,10 @@
 
 start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingStations) ->
 
+    ElectionTable = ets:new(electionTable, [set, public]),
+    % table for elections in progress, the messages received by the drone relative to an election in progress are sent to the
+    % correct handler for the election
+
 	Pid = spawn(drone, drone_Loop,
 	               [
 	                    Manager_Server_Addr,
@@ -25,7 +29,8 @@ start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingSt
 	                    ?BATTERY_CAPACITY,
 	                    RechargingStations,     % list of position for recharging station
 	                    idle,                   % status of the drone
-	                    0                       % counter for refused election due to low power, after 3 go to recharge station
+	                    0,                      % counter for refused election due to low power, after 3 go to recharge station
+	                    ElectionTable
 	               ]
 	           ),
 
@@ -34,7 +39,7 @@ start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingSt
 
 
 drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition,
-            DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter) ->
+            DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter, ElectionTable) ->
 % NeighbourList is only addresses
 
 % there is an exit at the bottom for cases without state modification
@@ -53,7 +58,7 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			 end,
 			 io:format("Drone ~w, PID ~w, List : ~w~n", [DroneID, self(), NewNeighbourList]),
 			 drone_Loop(Manager_Server_Addr, DroneID, NewNeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, DroneStatus, LowBatteryCounter);
+			            RechargingStations, DroneStatus, LowBatteryCounter, ElectionTable);
 
 
 		% receive a request for connection from another drone, add it if it was unknown
@@ -66,14 +71,14 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			Condition == false ->
 			    io:format("Drone ~w, PID ~w, List : ~w~n", [DroneID, self(), NeighbourList ++ [NeighbourDroneAddr]]),
 			    drone_Loop(Manager_Server_Addr, DroneID, NeighbourList ++ [NeighbourDroneAddr], SupportedWeight,
-			                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter ) ;
+			                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter, ElectionTable) ;
 
 			Condition == true -> true   % exit at bottom
 			end;
 
         % receive the list of online drones from the auxiliary process
         {newList, OnlineDrones} -> drone_Loop(Manager_Server_Addr, DroneID, OnlineDrones, SupportedWeight, DronePosition,
-                                            DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter) ;
+                                            DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter, ElectionTable) ;
 
         % receive a query from an other drone
         {queryOnline, DroneAddr} -> DroneAddr ! online ; % exit at bottom
@@ -83,27 +88,27 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			Manager_Server_Addr ! {droneStatus, self(), DroneID, DronePosition, DroneBattery, DroneStatus} ; % exit at bottom
 
 		{newPosition, NewPosition} -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, NewPosition,
-                                        DroneBattery, RechargingStations, DroneStatus , LowBatteryCounter ) ;
+                                        DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter, ElectionTable) ;
 
 		lowBattery ->
 		    if
 		    LowBatteryCounter == -1 -> true; % in case the drone is already going to recharge
 		    LowBatteryCounter < 2   -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
-		                                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter + 1) ;
+		                                DronePosition, DroneBattery, RechargingStations, DroneStatus, LowBatteryCounter + 1, ElectionTable) ;
 		    true -> io:format("Drone ~w going to recharge.~n", [DroneID]),
 		            spawn(drone, goToRecharge, [self(), DroneBattery, DronePosition, RechargingStations]),
 		            drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, charging, -1)
+			            RechargingStations, charging, -1, ElectionTable)
 		    end ;
 
 
         {modifyBatteryCharge, BatteryUsed} -> drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
-                                DronePosition, DroneBattery - BatteryUsed, RechargingStations, DroneStatus, LowBatteryCounter ) ;
+                                DronePosition, DroneBattery - BatteryUsed, RechargingStations, DroneStatus, LowBatteryCounter, ElectionTable ) ;
 
 
-        rechargeCompleted -> io:format("~n recharge completed"),
+        rechargeCompleted -> io:format("Recharge completed~n"),
 			drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight,
-                                DronePosition, ?BATTERY_CAPACITY, RechargingStations, idle, 0 ) ;
+                                DronePosition, ?BATTERY_CAPACITY, RechargingStations, idle, 0, ElectionTable ) ;
 
 %        crashOnline ->  if
 %                        DroneStatus == idle or DroneStatus == recharging -> io:format("crashOnline drone: ~w.~n", [DroneID]),
@@ -118,10 +123,10 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 
 %%%%%% messages relative to orders %%%%%%%%%%%%%
 
-		{ makeOrder, _PidClient, _ClientID, _OrderID, _Description } = Msg ->
-
+		{ makeOrder, _PidClient, ClientID, OrderID, _Description } = Msg ->
 			InitElection = spawn(election, initElection, [self(), DroneID, SupportedWeight, DronePosition, DroneBattery,
 			                         NeighbourList, RechargingStations, DroneStatus]),
+			ets:insert(ElectionTable, { {ClientID, OrderID}, InitElection }),   % save info election in progress
 			InitElection! Msg ; % exit at bottom
 
 
@@ -132,14 +137,14 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 			Manager_Server_Addr ! {inDelivery, DroneID, ClientID, OrderID, {}}, % notify the manager
             spawn(drone, droneDelivery, [self(), DronePosition, Source, Destination, ClientID, OrderID]),
             drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, {delivering, ClientID, OrderID, Source, Destination, Weight }, LowBatteryCounter) ;
+			            RechargingStations, {delivering, ClientID, OrderID, Source, Destination, Weight }, LowBatteryCounter, ElectionTable) ;
 
         % notify manager and free drone
         {delivered, ClientID, OrderID} ->
             spawn(drone, notifyManager, [Manager_Server_Addr, ClientID, OrderID]),
             io:format("Package number ~w from ~w delivered~n", [OrderID, ClientID]),
             drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, idle, LowBatteryCounter) ; % drone now free
+			            RechargingStations, idle, LowBatteryCounter, ElectionTable) ; % drone now free
 
 		% check that all the neighbours are alive, remove dead, if <= 2 ask more to manager
 		electionFailed ->
@@ -149,18 +154,24 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		{excessiveWeight, ClientID, OrderID} ->
 			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]); % exit at bottom
 
-		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} } = Msg ->
-            Handler = spawn(election,
-		        nonInitElection,
-		        [self(), DroneID, SupportedWeight, DronePosition, DroneBattery, NeighbourList, RechargingStations, DroneStatus]
-		    ),
-		    Handler ! Msg
+		{election, Addr, ClientID, OrderID, {Source, Destination, Weight} } = Wave ->
+            % in the case the wave for a particular election is the first, create a new handler,
+            % otherwise turn the message to the previous handler
+		    case ets:lookup(ElectionTable, {ClientID, OrderID}) of
+		    [] ->   Handler = spawn(election,
+		                nonInitElection,
+		                [self(), DroneID, SupportedWeight, DronePosition, DroneBattery, NeighbourList, RechargingStations, DroneStatus]
+		            ) ;
+		    [{_Key, Handler}] -> true
+		    end,
+
+		    Handler ! Wave
 
 	end,
-	
+
 	% NORMAL EXIT WITHOUT STATE MODIFICATION
 	drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePosition, DroneBattery,
-			            RechargingStations, DroneStatus, LowBatteryCounter)
+			            RechargingStations, DroneStatus, LowBatteryCounter, ElectionTable)
 .
 
 
@@ -215,13 +226,15 @@ goToRecharge(DroneAddr, DroneBattery, DronePosition, RechargingStations) ->
 
    		    Distance = trunc(math:ceil(Min)), % trunc for converting to int
 
-   		    io:format("Drone going to Station: ~w, Distance: ~w~n", [RecStation, Distance]),
+   		    io:format("Drone going to Station: ~w, from: ~w, distance: ~w~n", [RecStation, DronePosition, Distance]),
 
    		    % since speed is 1 per second, Distance is also time to wait
             timer:sleep(Distance * ?CONSTANT_MOVEMENT ),
             DroneAddr ! {modifyBatteryCharge, Distance}, % pass the battery level to subctract
             DroneAddr ! {newPosition, RecStation},       % notify new position
 
+
+            io:format("Drone in recharge~n"),
 
             RemainingBattery = DroneBattery - Distance,
             if
