@@ -206,21 +206,22 @@ handlerOrderPrimary(OrderTable, AddrRecord, DroneTable) ->
             ),
             % 0 for empty droneID, the time is the last time of the inspection by the manager
 
-			
+
             % select random drone
             Candidate = pick_rand(DroneTable),
-
+            io:format("Candidate drone: ~w~n", [Candidate]),
             if
             Candidate /= 0 ->   {DroneID, DroneAddr} = Candidate,
                                 PidBckHandler ! DroneID, % send drone choice to the backup
                                 receive confirmedBck -> true
                                 end,
-								
+
                                 % update table drone
                                 assignDroneToOrder(OrderTable, {ClientID, OrderID}, DroneID ),
                                 % we assume the drone is alive, the manager will ping it after a certaint amount of time
 
-								DroneAddr ! Msg;
+								DroneAddr ! Msg
+								;
             true -> io:format("Warning: no drones connected~n"), silentError
             end,
 

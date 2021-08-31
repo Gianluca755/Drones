@@ -521,11 +521,6 @@ The tests are in the folder \textsf{Tests} with one file for every top level ent
 	\item \textsf{test5:startElection()} :: in this case there are only 3 drones without servers, a single request will be created and a drone will be elected.
 	\end{enumerate}
 
-\item \textbf{Client make a delivery request which is carried out}
-	\begin{enumerate}
-	\item \textsf{test6:startOrder()} :: this is the compete test for the basic case.
-	\end{enumerate}
-
 \item \textbf{Support for a crashed drone}:
 	\begin{enumerate}
 		\item the case where a drone crashes during the join request to the manager server. In this case the is no problem since the interaction doesn't require keeping a state, so the drone can retry at any time;
@@ -557,6 +552,10 @@ The system that we have developed partially satisfies the functional requirement
 
 The functionalities for handling the following situations are not complete:
 \begin{itemize}
+	\item \textbf{Client make a delivery request which is carried out}
+	\begin{enumerate}
+	\item \textsf{test6:startOrder()} :: this is the compete test for the basic case, the order is sent from the manager to a drone but it's no received.
+	\end{enumerate}
 	\item if a drone is out of battery power due to misreading of the sensor or strong wind;
 	\item if a drone crashes while it is in idle, the neighbour drones will notice the situation at the next election and consider the drone offline;
 	\item if a drone crashes after it has picked up the package;

@@ -34,7 +34,9 @@ start(Manager_Server_Addr, DroneID, SupportedWeight, DronePosition, RechargingSt
 	               ]
 	           ),
 
-	Manager_Server_Addr ! { joinRequest, DroneID, Pid }
+	Manager_Server_Addr ! { joinRequest, DroneID, Pid },
+
+	timer:sleep(infinity) % needed for mantaing the existence of the table
 .
 
 
