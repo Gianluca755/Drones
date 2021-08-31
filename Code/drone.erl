@@ -153,8 +153,8 @@ drone_Loop(Manager_Server_Addr, DroneID, NeighbourList, SupportedWeight, DronePo
 		    spawn(drone, checkNeighbour, [NeighbourList, [], DroneID, self(), Manager_Server_Addr]); % exit at bottom
 
 
-		{excessiveWeight, ClientID, OrderID} ->
-			io:format("~n the package ~w from ~w weighs too much: ~n", [OrderID, ClientID]); % exit at bottom
+		{excessiveWeight, ClientID, OrderID, Weight} ->
+			io:format("~n the package ~w from ~w weighs too much: ~w~n", [OrderID, ClientID, Weight]); % exit at bottom
 
 
 %%%%%% messages for the elelections in progress %%%%%%
